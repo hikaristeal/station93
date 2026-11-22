@@ -270,7 +270,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.1.0';
+  const APPV = '1.2.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -362,10 +362,42 @@ body:not(.locked) .gate{display:none}
 
   // ----- merging -----
   const newer = (a, b) => String(a || '') > String(b || '');
+  // ----- Android pop-up notifications (shown when a sync brings something new) -----
+  const NK = {call: 'New calls', approval: 'Approvals and Ready to Complete', claude: "Claude's work (narratives, OK to Complete results)", other: 'Other updates (stage changes, mileage, notices)'};
+  const nset = () => Object.assign({on: false, details: true, call: true, approval: true, claude: true, other: false}, store.get('notify', {}));
+  let pops = [];
+  function pop(kind, title, body, id) { pops.push({kind, title, body, id}); }
+  async function flushPops() {
+    const list = pops; pops = []; const ns = nset();
+    if (!ns.on || !cfg.notify_armed || !('Notification' in window) || Notification.permission !== 'granted') return;
+    const send = list.filter((x) => ns[x.kind]); if (!send.length) return;
+    const reg = navigator.serviceWorker ? await navigator.serviceWorker.getRegistration().catch(() => null) : null;
+    const show = (title, body, id, tag) => { const o = {body: ns.details ? body : 'Open Station 93 to see it', icon: 'icon-192.png', badge: 'icon-192.png', tag, renotify: true, data: {id: id || ''}}; const t = ns.details ? title : 'Station 93 update'; try { if (reg) reg.showNotification(t, o); else new Notification(t, o); } catch (e) { /* not allowed here */ } };
+    if (send.length > 4) show(`${send.length} Station 93 updates`, send.slice(0, 4).map((x) => x.title).join('\n') + '\n…', '', 'st93-batch');
+    else send.forEach((x) => show(x.title, x.body, x.id, x.id ? 'st93-' + x.id + '-' + x.kind : 'st93-' + x.kind + '-' + Date.now()));
+  }
+  // tapping a pop-up opens that call (after sign-in if the app is locked)
+  let pendingOpen = new URLSearchParams(location.search).get('call') || '';
+  function openFromPop(id) { if (!id) return; if (document.body.classList.contains('locked')) { pendingOpen = id; return; } if (S.reports[id]) { show('calls'); openCall(id); } }
+  if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.open) openFromPop(String(e.data.open)); });
+  function notifySection() {
+    const ns = nset(); const can = 'Notification' in window; const perm = can ? Notification.permission : 'unsupported';
+    const save = (k, v) => { const o = nset(); o[k] = v; store.set('notify', o); };
+    const box = (k, label) => { const c = el('input', {type: 'checkbox', checked: !!ns[k], style: 'width:22px;height:22px'}); c.addEventListener('change', () => save(k, c.checked)); return el('label', {class: 'row', style: 'gap:10px;min-height:44px'}, c, label); };
+    const turnOn = async () => { if (!can) { toast('This browser cannot show notifications'); return; } const r = await Notification.requestPermission(); if (r === 'granted') { save('on', true); toast('Pop-ups on'); } else toast('Notifications are blocked - allow them in Android Settings > Apps > Station 93 > Notifications'); renderSettings(); };
+    const test = async () => { const reg = navigator.serviceWorker ? await navigator.serviceWorker.getRegistration().catch(() => null) : null; const o = {body: 'This is how Station 93 updates will look.', icon: 'icon-192.png', badge: 'icon-192.png', tag: 'st93-test', data: {id: ''}}; try { if (reg) await reg.showNotification('Station 93 test', o); else new Notification('Station 93 test', o); } catch (e) { toast('Could not show it: ' + e.message); } };
+    return el('div', {class: 'sec'}, el('h3', {text: 'Pop-up notifications'}),
+      el('p', {class: 'note', text: perm === 'granted' && ns.on ? 'On. Android shows a pop-up when a sync brings something new.' : perm === 'denied' ? 'Blocked by Android. Turn them on in Android Settings > Apps > Station 93 > Notifications, then come back here.' : perm === 'unsupported' ? 'This browser cannot show notifications.' : 'Off.'}),
+      el('div', {class: 'row'}, perm === 'granted' && ns.on ? el('button', {type: 'button', class: 'btn', text: 'Turn off', onclick: () => { save('on', false); renderSettings(); }}) : el('button', {type: 'button', class: 'btn primary', text: 'Turn on pop-ups', onclick: turnOn}), perm === 'granted' ? el('button', {type: 'button', class: 'btn ghost', text: 'Send a test', onclick: test}) : null),
+      el('b', {text: 'Notify me about'}), Object.entries(NK).map(([k, l]) => box(k, l)),
+      box('details', 'Show the call type and street in the pop-up (shows on the lock screen)'),
+      el('p', {class: 'note', text: 'Pop-ups come from the app itself, so they arrive while Station 93 is open or was used in the last few minutes - Android pauses the app after that, and Google needs a tap about once an hour before it can sync. Dispatches still come from Bryx first; these cover what Claude and the PC app changed.'}));
+  }
+
   function mergeSnapshot(snap) {
     let n = 0; const arr = (x) => Array.isArray(x) ? x : Object.values(x || {});
     const pend = new Set(outbox.filter((c) => c.kind === 'report.update').map((c) => String(c.id)));
-    for (const inc of arr(snap.reports)) { const id = String(inc.id); const cur = S.reports[id]; if (!cur || newer(inc._mod, cur._mod) || (!inc._mod && !cur._mod && !pend.has(id) && JSON.stringify(inc) !== JSON.stringify(cur))) { S.reports[id] = Object.assign({}, inc, {id}); n++; } }
+    for (const inc of arr(snap.reports)) { const id = String(inc.id); const cur = S.reports[id]; if (!cur || newer(inc._mod, cur._mod) || (!inc._mod && !cur._mod && !pend.has(id) && JSON.stringify(inc) !== JSON.stringify(cur))) { if (!cur) pop('call', `New call ${inc.num || id}`, [inc.type, inc.area].filter(Boolean).join(' · '), id); else if (inc.stage && inc.stage !== cur.stage) pop(inc.stage === 'Ready to Complete' ? 'approval' : 'other', `${inc.num || id}: ${inc.stage}`, inc.needs || '', id); S.reports[id] = Object.assign({}, inc, {id}); n++; } }
     for (const k of ['crew', 'apparatus']) for (const inc of arr(snap[k])) { const id = String(inc.id); const cur = S[k][id]; if (!cur || !newer(cur.status_at, inc.status_at) && JSON.stringify(inc) !== JSON.stringify(cur)) { S[k][id] = Object.assign({}, inc, {id}); n++; } }
     for (const inc of arr(snap.mileage)) { const v = inc.vehicle || inc.id; const cur = S.mileage[v]; if (!cur || inc.page > cur.page || (inc.page === cur.page && (inc.rows || []).length > (cur.rows || []).length)) { S.mileage[v] = Object.assign({}, inc, {vehicle: v}); n++; } }
     return n;
@@ -375,19 +407,20 @@ body:not(.locked) .gate{display:none}
     const g = j.generated_at || ''; let n = 0; const notes = [];
     for (const inc0 of j.reports || []) {
       const inc = Object.assign({}, inc0); const id = String(inc.id); const done = inc.requests_done; delete inc.requests_done; const cur = S.reports[id];
-      if (!cur) { S.reports[id] = inc; n++; notes.push(`New call ${inc.num || id}${inc.type ? ' - ' + inc.type : ''}${inc.area ? ', ' + inc.area : ''}`); continue; }
+      if (!cur) { S.reports[id] = inc; n++; pop('call', `New call ${inc.num || id}`, [inc.type, inc.area].filter(Boolean).join(' · '), id); notes.push(`New call ${inc.num || id}${inc.type ? ' - ' + inc.type : ''}${inc.area ? ', ' + inc.area : ''}`); continue; }
       if (newer(cur._mod, g)) continue; // changed here after Claude wrote this
-      if (inc.narrative_by_claude && inc.narrative && inc.narrative !== cur.narrative) { inc.narrative_draft_pending = true; notes.push(`${cur.num || id}: narrative drafted by Claude - open it, check it, press Save`); }
-      if (Array.isArray(done)) for (const dn of done) { const q2 = (cur.requests || []).find((x) => x.action === dn.action && x.status !== 'done'); if (q2) { q2.status = dn.status || 'done'; q2.done_at = dn.at; if (dn.note) q2.note = dn.note; notes.push(`${cur.num || id}: ${q2.label || q2.action} - ${q2.status}${dn.note ? ' (' + dn.note + ')' : ''}`); } }
+      if (inc.narrative_by_claude && inc.narrative && inc.narrative !== cur.narrative) { inc.narrative_draft_pending = true; pop('claude', `${cur.num || id}: narrative ready to check`, 'Drafted by Claude from your notes - open it and press Save', id); notes.push(`${cur.num || id}: narrative drafted by Claude - open it, check it, press Save`); }
+      if (Array.isArray(done)) for (const dn of done) { const q2 = (cur.requests || []).find((x) => x.action === dn.action && x.status !== 'done'); if (q2) { q2.status = dn.status || 'done'; q2.done_at = dn.at; if (dn.note) q2.note = dn.note; pop('claude', `${cur.num || id}: ${q2.label || q2.action} - ${q2.status}`, dn.note || '', id); notes.push(`${cur.num || id}: ${q2.label || q2.action} - ${q2.status}${dn.note ? ' (' + dn.note + ')' : ''}`); } }
+      if (inc.stage && inc.stage !== cur.stage) pop(inc.stage === 'Ready to Complete' ? 'approval' : 'other', `${cur.num || id}: ${inc.stage}`, inc.needs || '', id);
       if (inc.stage && inc.stage !== cur.stage) notes.push(`${cur.num || id}: ${inc.stage}${inc.needs ? ' - ' + inc.needs : ''}`);
       Object.assign(cur, inc); n++;
     }
     cfg.seen_ap = cfg.seen_ap || [];
-    for (const ap of j.approvals || []) { const key = `${ap.id}|${ap.text}`; if (cfg.seen_ap.includes(key)) continue; cfg.seen_ap.push(key); const r = S.reports[String(ap.id)]; if (r && !newer(r._mod, g)) { if (ap.stage) r.stage = ap.stage; if (ap.needs) r.needs = ap.needs; } notes.push(`${ap.id}: ${ap.text || 'approval'}`); n++; }
+    for (const ap of j.approvals || []) { const key = `${ap.id}|${ap.text}`; if (cfg.seen_ap.includes(key)) continue; cfg.seen_ap.push(key); pop('approval', `${ap.id}: ${ap.text || 'approval'}`, ap.stage || '', String(ap.id)); const r = S.reports[String(ap.id)]; if (r && !newer(r._mod, g)) { if (ap.stage) r.stage = ap.stage; if (ap.needs) r.needs = ap.needs; } notes.push(`${ap.id}: ${ap.text || 'approval'}`); n++; }
     cfg.seen_ap = cfg.seen_ap.slice(-300);
     for (const k of ['crew', 'apparatus']) for (const inc of j[k] || []) { const cur = S[k][inc.id]; if (!cur || !newer(cur.status_at, inc.status_at || g)) { S[k][inc.id] = Object.assign(cur || {}, inc); n++; } }
-    for (const m of j.mileage || []) { const cur = S.mileage[m.vehicle]; if (!cur || m.page > cur.page || (m.page === cur.page && (m.rows || []).length >= (cur.rows || []).length)) { if (cur && (m.rows || []).length > (cur.rows || []).length) notes.push(`${m.vehicle} mileage: row ${m.rows.length} added`); S.mileage[m.vehicle] = Object.assign(cur || {}, m); n++; } }
-    for (const x of j.notices || []) if (x && x.text) notes.push(String(x.text));
+    for (const m of j.mileage || []) { const cur = S.mileage[m.vehicle]; if (!cur || m.page > cur.page || (m.page === cur.page && (m.rows || []).length >= (cur.rows || []).length)) { if (cur && (m.rows || []).length > (cur.rows || []).length) pop('other', `${m.vehicle} mileage`, `Row ${m.rows.length} added`, ''); if (cur && (m.rows || []).length > (cur.rows || []).length) notes.push(`${m.vehicle} mileage: row ${m.rows.length} added`); S.mileage[m.vehicle] = Object.assign(cur || {}, m); n++; } }
+    for (const x of j.notices || []) if (x && x.text) { notes.push(String(x.text)); if (!/nothing new/i.test(x.text)) pop('other', 'Station 93', String(x.text), ''); }
     if (j.applied_through_tablet) { outbox = outbox.filter((c) => newer(c.at, j.applied_through_tablet)); store.set('outbox', outbox); }
     addNotices(notes); return n;
   }
@@ -406,7 +439,7 @@ body:not(.locked) .gate{display:none}
       if (pc.length && (pc[0].modifiedTime !== cfg.pc_mod || !S.ready)) { const j = await getJSON(pc[0].id); got += mergeSnapshot(j.snapshot || {}); cfg.pc_mod = pc[0].modifiedTime; cfg.pc_at = j.exported_at || pc[0].modifiedTime; }
       const rs = (await find(`'${cfg.fromId}' in parents and name contains 'from-claude-'`, 'name desc')).slice(0, 5).reverse();
       for (const f of rs) { if (cfg.claude_seen && f.name <= cfg.claude_seen) continue; const j = await getJSON(f.id); got += applyClaude(j); cfg.claude_seen = f.name; cfg.claude_at = j.generated_at || f.modifiedTime; }
-      S.ready = true; persist(); refreshMe();
+      S.ready = true; persist(); refreshMe(); await flushPops(); if (!cfg.notify_armed) { cfg.notify_armed = true; saveCfg(); }
       if (dirty || manual || !cfg.tabletFileId) await pushTablet(manual);
       cfg.last_sync = nowISO(); cfg.last_err = ''; saveCfg(); setNet(outbox.length ? 'ok' : 'ok');
       if (manual) toast(got ? `Synced - ${got} update${got > 1 ? 's' : ''} received` : 'Synced - nothing new');
@@ -902,7 +935,7 @@ body:not(.locked) .gate{display:none}
     setTimeout(() => (GT.user.value ? GT.pw : GT.user).focus(), 50);
   }
   function lockApp(reason) { sess.set('unlocked', null); sess.set('user', null); document.body.classList.add('locked'); closeModal(); setMode('signin', reason); }
-  function unlockApp(u) { sess.set('unlocked', '1'); sess.set('user', u.username); store.set('lastuser', u.username); document.body.classList.remove('locked'); fails = 0; lastAct = Date.now(); $('#lockBtn').title = `Signed in as ${u.username} - tap to lock`; if (view === 'settings') renderSettings(); }
+  function unlockApp(u) { sess.set('unlocked', '1'); sess.set('user', u.username); store.set('lastuser', u.username); document.body.classList.remove('locked'); fails = 0; lastAct = Date.now(); $('#lockBtn').title = `Signed in as ${u.username} - tap to lock`; if (view === 'settings') renderSettings(); if (pendingOpen) { const id = pendingOpen; pendingOpen = ''; setTimeout(() => openFromPop(id), 50); } }
   function shake(t) { GT.form.classList.remove('shake'); void GT.form.offsetWidth; GT.form.classList.add('shake'); GT.msg.textContent = t; }
   function slow() { const now = Date.now(); if (now < waitUntil) { GT.msg.textContent = `Too many tries - wait ${Math.ceil((waitUntil - now) / 1000)} s.`; return true; } return false; }
   function miss(t) { fails++; if (fails >= 5) { waitUntil = Date.now() + 30000; fails = 0; shake('Wrong 5 times - wait 30 seconds.'); } else shake(t); }
@@ -966,6 +999,7 @@ body:not(.locked) .gate{display:none}
     const v = $('#v-settings'); v.replaceChildren();
     v.append(el('div', {class: 'wrap', style: 'max-width:720px;margin:0'},
       lockSection(),
+      notifySection(),
       (() => { const cid = el('input', {type: 'text', value: cfg.client_id || '', placeholder: (window.ST93_CONFIG && window.ST93_CONFIG.clientId) ? 'Using the built-in ID' : '1234-abc.apps.googleusercontent.com', 'aria-label': 'Google sign-in ID'});
         cid.addEventListener('change', () => { cfg.client_id = cid.value.trim(); saveCfg(); toast('Saved'); });
         const line = (k, v2) => el('div', {class: 'row'}, el('span', {class: 'note', style: 'min-width:170px', text: k}), el('span', {text: v2}));
@@ -990,7 +1024,8 @@ body:not(.locked) .gate{display:none}
   setNet(outbox.length ? 'warn' : 'wait');
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
   syncNow(false);
-  setInterval(() => syncNow(false), 5 * 60000);
+  let lastTry = 0; const tick = () => { const gap = document.visibilityState === 'visible' ? 2 * 60000 : 5 * 60000; if (Date.now() - lastTry >= gap) { lastTry = Date.now(); syncNow(false); } };
+  setInterval(tick, 30000);
   window.addEventListener('online', () => syncNow(false));
   window.addEventListener('offline', () => setNet(outbox.length ? 'warn' : 'bad', 'Offline - changes are saved on this tablet'));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncNow(false); });
