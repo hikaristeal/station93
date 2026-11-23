@@ -26,18 +26,19 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121513;--panel:#1b1f1c;--sunk:#232825;--fg:#e7ebe8;--muted:#9aa49d;--line:#323833;--accent:#e2554b;--ok:#46b077;--warn:#e3a23f;--bad:#ef6359;--blue:#6a9be0;--gray:#8d968f;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#121513;--panel:#1b1f1c;--sunk:#232825;--fg:#e7ebe8;--muted:#9aa49d;--line:#323833;--accent:#e2554b;--ok:#46b077;--warn:#e3a23f;--bad:#ef6359;--blue:#6a9be0;--gray:#8d968f;color-scheme:dark}
 *{box-sizing:border-box}
-html,body{height:100%}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 var(--body);-webkit-tap-highlight-color:transparent}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-.app{display:grid;grid-template-columns:96px 1fr;height:100%}
-.rail{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:12px 8px;padding-left:max(8px,env(safe-area-inset-left,0px))}
+.app{position:fixed;inset:0;display:grid;grid-template-columns:96px minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:100dvh}
+.rail{overflow-y:auto;min-height:0;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:12px 8px;padding-left:max(8px,env(safe-area-inset-left,0px))}
 .badge{font:700 15px/1 var(--display);letter-spacing:.06em;background:var(--accent);color:var(--accent-fg);border-radius:8px;padding:10px 0;text-align:center;margin-bottom:10px}
 .tabbtn{min-height:68px;border:0;background:none;border-radius:var(--r);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);font:600 13px/1.1 var(--display);letter-spacing:.03em;text-transform:uppercase}
 .tabbtn svg{width:26px;height:26px}
 .tabbtn.on{background:var(--sunk);color:var(--fg);box-shadow:inset 4px 0 0 var(--accent)}
-.main{display:flex;flex-direction:column;min-width:0;height:100%}
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;height:100%}
+.top{flex:0 0 auto}
 .top{display:flex;align-items:center;gap:12px;padding-block:12px;padding-left:20px;padding-right:max(20px,env(safe-area-inset-right,0px));background:var(--panel);border-bottom:1px solid var(--line)}
 .top h1{margin:0;font:700 24px/1 var(--display);letter-spacing:.02em}
 .top .sub{color:var(--muted);font-size:12px}
@@ -47,7 +48,7 @@ button{cursor:pointer}
 .netdot.ok i{background:var(--ok)}.netdot.warn i{background:var(--warn)}.netdot.bad i{background:var(--bad)}
 .svc{min-height:40px;border-radius:999px;border:1px solid var(--line);background:var(--sunk);padding:0 16px;font-weight:600}
 .svc.in{background:var(--ok);border-color:var(--ok);color:#fff}.svc.out{background:var(--bad);border-color:var(--bad);color:#fff}
-.view{flex:1;overflow:auto;padding-block:16px 24px;padding-left:20px;padding-right:max(20px,env(safe-area-inset-right,0px))}
+.view{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-block:16px 24px;padding-left:20px;padding-right:max(20px,env(safe-area-inset-right,0px))}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .btn{min-height:var(--tap);border-radius:var(--r);border:1px solid var(--line);background:var(--panel);padding:0 18px;font-weight:600}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
@@ -211,12 +212,19 @@ body:not(.locked) .gate{display:none}
   .call .right{grid-column:2/-1;align-items:flex-start;text-align:left;max-width:none}
 }
 @media (max-width:640px){
-  .app{grid-template-columns:1fr;grid-template-rows:1fr auto}
-  .rail{grid-row:2;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));justify-content:space-around}
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+  .main{grid-row:1}
+  .rail{grid-row:2;overflow:visible;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));justify-content:space-around}
   .badge{display:none}
   .tabbtn{flex:1;min-height:58px}
   .tabbtn.on{box-shadow:inset 0 3px 0 var(--accent)}
   .top .sub{display:none}
+  .top{gap:8px;padding-left:12px;padding-right:max(12px,env(safe-area-inset-right,0px));padding-top:max(10px,env(safe-area-inset-top,0px))}
+  .top h1{font-size:20px;white-space:nowrap}
+  .netdot{padding:10px;min-width:40px;min-height:40px;justify-content:center}.netdot>span{display:none}
+  .svc{padding:0 12px}
+  .svc.lockb{width:40px;padding:0;justify-content:center;font-size:0}.svc.lockb svg{width:20px;height:20px}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 }
 @media (prefers-reduced-motion:no-preference){.call,.tile,.opt,.cat{transition:background .12s,border-color .12s}}
 </style>
@@ -289,7 +297,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.5.0';
+  const APPV = '1.5.1';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
