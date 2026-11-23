@@ -289,7 +289,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.4.0';
+  const APPV = '1.5.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -336,7 +336,7 @@ body:not(.locked) .gate{display:none}
   }
   function setNet(s2, why) {
     net = s2; const n = $('#net'); n.className = 'netdot ' + (s2 === 'ok' ? 'ok' : s2 === 'warn' || s2 === 'tap' ? 'warn' : s2 === 'bad' ? 'bad' : '');
-    n.lastChild.textContent = s2 === 'ok' ? 'Synced ' + (cfg.last_sync ? fmtWhen(cfg.last_sync) : '') : s2 === 'warn' ? 'Changes not sent yet' : s2 === 'tap' ? 'Tap to sync' : s2 === 'sync' ? 'Syncing…' : s2 === 'bad' ? (why || 'Offline') : 'Starting…';
+    n.lastChild.textContent = s2 === 'ok' ? 'Synced ' + (cfg.last_sync ? fmtWhen(cfg.last_sync) : '') : s2 === 'warn' ? 'Changes not sent yet' : s2 === 'tap' ? 'Touch the screen to sync' : s2 === 'sync' ? 'Syncing…' : s2 === 'bad' ? (why || 'Offline') : 'Starting…';
     n.title = why || 'Google Drive sync - tap to sync now';
   }
 
@@ -347,9 +347,19 @@ body:not(.locked) .gate{display:none}
   const tokenOk = () => tok && tok.exp > Date.now() + 60000;
   function loadGsi() { return new Promise((res) => { if (window.google && google.accounts && google.accounts.oauth2) return res(true); let sc = document.getElementById('gsi'); if (!sc) { sc = el('script', {id: 'gsi', src: 'https://accounts.google.com/gsi/client', async: true}); document.head.append(sc); } sc.addEventListener('load', () => res(true)); sc.addEventListener('error', () => res(false)); setTimeout(() => res(!!(window.google && google.accounts)), 8000); }); }
   // Must be called from a tap: Google opens a small sign-in window.
-  async function signIn() {
-    if (!clientId()) { toast('Add the Google sign-in ID in Settings first'); show('settings'); return false; }
-    if (!(await loadGsi())) { toast('Could not reach Google - check the wifi'); return false; }
+  // Google ends the sign-in after an hour. Instead of making you find the sync button, the next touch
+  // anywhere in the app (a PIN digit, a call, a tab) quietly signs back in to the same account and syncs.
+  let autoBusy = false, lastAuto = 0;
+  document.addEventListener('pointerdown', () => {
+    if (!cfg.connected || !navigator.onLine || autoBusy || syncing) return;
+    const soon = !tok || tok.exp < Date.now() + 5 * 60000;          // expired or about to
+    if (!soon || Date.now() - lastAuto < 90000) return;
+    lastAuto = Date.now(); autoBusy = true;
+    signIn(true).then((ok) => { autoBusy = false; if (ok) syncNow(false); });
+  }, {capture: true, passive: true});
+  async function signIn(quiet) {
+    if (!clientId()) { if (!quiet) { toast('Add the Google sign-in ID in Settings first'); show('settings'); } return false; }
+    if (!(await loadGsi())) { if (!quiet) toast('Could not reach Google - check the wifi'); return false; }
     return new Promise((res) => {
       const tc = google.accounts.oauth2.initTokenClient({client_id: clientId(), scope: SCOPES, prompt: cfg.connected ? '' : 'consent', hint: cfg.email || undefined,
         callback: (r) => { if (!r || r.error || !r.access_token) { res(false); return; } tok = {t: r.access_token, exp: Date.now() + (Number(r.expires_in) || 3600) * 1000}; store.set('tok', tok); cfg.connected = true; saveCfg(); res(true); },
@@ -410,7 +420,7 @@ body:not(.locked) .gate{display:none}
       el('div', {class: 'row'}, perm === 'granted' && ns.on ? el('button', {type: 'button', class: 'btn', text: 'Turn off', onclick: () => { save('on', false); renderSettings(); }}) : el('button', {type: 'button', class: 'btn primary', text: 'Turn on pop-ups', onclick: turnOn}), perm === 'granted' ? el('button', {type: 'button', class: 'btn ghost', text: 'Send a test', onclick: test}) : null),
       el('b', {text: 'Notify me about'}), Object.entries(NK).map(([k, l]) => box(k, l)),
       box('details', 'Show the call type and street in the pop-up (shows on the lock screen)'),
-      el('p', {class: 'note', text: 'Pop-ups come from the app itself, so they arrive while Station 93 is open or was used in the last few minutes - Android pauses the app after that, and Google needs a tap about once an hour before it can sync. Dispatches still come from Bryx first; these cover what Claude and the PC app changed.'}));
+      el('p', {class: 'note', text: 'Pop-ups come from the app itself, so they arrive while Station 93 is open or was used in the last few minutes - Android pauses the app after that, and the Google sign-in renews on your next touch after it runs out (about hourly). Dispatches still come from Bryx first; these cover what Claude and the PC app changed.'}));
   }
 
   function mergeSnapshot(snap) {
@@ -454,6 +464,7 @@ body:not(.locked) .gate{display:none}
     syncing = true; setNet('sync'); let got = 0;
     try {
       await findFolders();
+      if (!cfg.email) { try { const a = await (await gd(`${API}/about?fields=user(emailAddress)`)).json(); if (a.user && a.user.emailAddress) { cfg.email = a.user.emailAddress; saveCfg(); } } catch (e) { /* not needed to sync */ } }
       const pc = await find(`name='to-claude.json' and '${cfg.syncId}' in parents`);
       if (pc.length && (pc[0].modifiedTime !== cfg.pc_mod || !S.ready)) { const j = await getJSON(pc[0].id); got += mergeSnapshot(j.snapshot || {}); cfg.pc_mod = pc[0].modifiedTime; cfg.pc_at = j.exported_at || pc[0].modifiedTime; }
       const rs = (await find(`'${cfg.fromId}' in parents and name contains 'from-claude-'`, 'name desc')).slice(0, 5).reverse();
@@ -1072,8 +1083,8 @@ body:not(.locked) .gate{display:none}
         const line = (k, v2) => el('div', {class: 'row'}, el('span', {class: 'note', style: 'min-width:170px', text: k}), el('span', {text: v2}));
         return el('div', {class: 'sec'}, el('h3', {text: 'Google Drive sync'}),
           el('p', {class: 'note', text: 'This tablet keeps its own copy of the calls. Over wifi it reads the PC app\'s sync file and Claude\'s replies from your Drive, and saves its changes to its own file there. Claude picks them up at :40 each hour.'}),
-          line('Status', net === 'ok' ? 'Synced' : net === 'tap' ? 'Tap Sync now (Google needs a tap about once an hour)' : net === 'bad' ? (cfg.last_err || (cfg.connected ? 'Offline' : 'Not connected')) : net === 'warn' ? 'Changes waiting to send' : '…'),
-          line('Last sync', cfg.last_sync ? fmtWhen(cfg.last_sync) : 'Never'), line('PC app data from', cfg.pc_at ? fmtWhen(cfg.pc_at) : '—'), line('Last Claude reply', cfg.claude_at ? fmtWhen(cfg.claude_at) : '—'),
+          line('Status', net === 'ok' ? 'Synced' : net === 'tap' ? 'Google sign-in ran out - the next touch anywhere signs back in' : net === 'bad' ? (cfg.last_err || (cfg.connected ? 'Offline' : 'Not connected')) : net === 'warn' ? 'Changes waiting to send' : '…'),
+          line('Google account', cfg.email || (cfg.connected ? 'learned at the next sync' : '—')), line('Last sync', cfg.last_sync ? fmtWhen(cfg.last_sync) : 'Never'), line('PC app data from', cfg.pc_at ? fmtWhen(cfg.pc_at) : '—'), line('Last Claude reply', cfg.claude_at ? fmtWhen(cfg.claude_at) : '—'),
           line('Waiting for Claude', outbox.length ? `${outbox.length} change(s) - Claude applies them at :40` : 'Nothing'),
           cfg.last_err ? el('p', {class: 'note', style: 'color:var(--bad)', text: 'Last problem: ' + cfg.last_err}) : null,
           el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn primary', text: cfg.connected ? 'Sync now' : 'Connect Google Drive', onclick: () => syncNow(true)}),
