@@ -201,6 +201,8 @@ body:not(.locked) .gate{display:none}
 .pinpad button{height:76px;border-radius:50%;border:1px solid #d6dad4;background:#eef0f2;color:#1b1f24;font:600 28px var(--display)}
 .pinpad button:active{background:#d9dde1}.pinpad .blank{visibility:hidden}
 .pinlinks{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+.btn.update{background:var(--ok);border-color:var(--ok);color:#fff}
+.tabbtn.has-update{position:relative}.tabbtn.has-update::after{content:'';position:absolute;top:10px;right:18px;width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px var(--panel)}
 .svc.iconb{width:40px;padding:0;display:inline-grid;place-items:center}.svc.iconb svg{width:20px;height:20px}
 .svc.iconb[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .svc.lockb{display:inline-flex;align-items:center;gap:6px}.svc.lockb svg{width:18px;height:18px}
@@ -297,7 +299,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.5.2';
+  const APPV = '1.6.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -1099,7 +1101,7 @@ body:not(.locked) .gate{display:none}
             cfg.connected ? el('button', {type: 'button', class: 'btn ghost', text: 'Disconnect', onclick: () => confirmBox('Disconnect Google Drive?', 'Calls stay on this tablet. Changes not yet picked up by Claude stay waiting until you connect again.', 'Disconnect', () => { if (tok && window.google && google.accounts) try { google.accounts.oauth2.revoke(tok.t, () => {}); } catch (e) { /* ignore */ } tok = null; store.set('tok', null); cfg.connected = false; cfg.fromId = cfg.syncId = ''; saveCfg(); renderSettings(); })}) : null),
           el('label', {class: 'field'}, 'Google sign-in ID (from your Google Cloud project)', cid));
       })(),
-      el('div', {class: 'sec'}, el('h3', {text: 'App'}), el('p', {class: 'note', text: `Version ${APPV}. Installed apps update themselves the next time they open with wifi.`}), el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn', text: 'Check for update', onclick: () => { if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.getRegistration().then((r) => r && r.update()).then(() => toast('Checked - reopen the app to load any update')); else location.reload(); }}))),
+      appSection(),
       el('div', {class: 'sec'}, el('h3', {text: 'Assessment sheets on this tablet'}), (() => { const keys = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('st93t.as.')) keys.push(k.slice(9)); } } catch (e) { /* blocked */ } return keys.length ? el('div', {class: 'row'}, keys.sort().map((c) => el('button', {type: 'button', class: 'opt', text: c, onclick: () => { const r = Object.values(S.reports).find((x) => x.cad === c); openAssessment(c, r && r.id, r && r.date); }}))) : el('p', {class: 'note', text: 'None saved on this tablet.'}); })())));
   }
 
@@ -1122,13 +1124,54 @@ body:not(.locked) .gate{display:none}
     return el('div', {class: 'sec'}, el('h3', {text: 'Appearance'}), el('label', {class: 'field'}, 'Light or dark', sel), el('p', {class: 'note', text: 'The moon button in the top bar switches between light and dark. "Follow the tablet" uses Android\'s own dark mode setting.'}));
   }
 
+  // ---------- app updates (green button in Settings, install only after you confirm) ----------
+  let swReg = null, installing = false;
+  const upd = {ready: false, version: '', checking: false};
+  function setReady(ready) {
+    const was = upd.ready; upd.ready = ready; document.querySelector('.tabbtn[data-view="settings"]').classList.toggle('has-update', ready);
+    if (ready) { fetch('sw.js', {cache: 'no-store'}).then((r) => r.text()).then((t) => { const m = /const V = 'st93-([\d.]+)'/.exec(t); if (m) upd.version = m[1]; if (view === 'settings') renderSettings(); }).catch(() => {}); }
+    if (view === 'settings') renderSettings();
+    if (ready && !was) toast('A Station 93 update is ready - see Settings');
+  }
+  function watchReg(reg) {
+    if (reg.waiting && navigator.serviceWorker.controller) setReady(true);
+    reg.addEventListener('updatefound', () => { const w = reg.installing; if (!w) return; w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) setReady(true); }); });
+  }
+  async function checkUpdate() {
+    if (!('serviceWorker' in navigator) || !swReg) { toast('Updates work in the installed app (open it from its icon)'); return; }
+    upd.checking = true; renderSettings();
+    try { await swReg.update(); } catch (e) { /* offline */ }
+    await new Promise((r) => setTimeout(r, 2500));      // give a new version a moment to download
+    upd.checking = false;
+    if (swReg.waiting) setReady(true); else { renderSettings(); toast(navigator.onLine ? `You have the latest version (${APPV})` : 'No connection - try again on wifi'); }
+  }
+  function installUpdate() {
+    confirmBox(`Install Station 93 ${upd.version || 'update'}?`, `The app will restart on the new version (now ${APPV}). Your calls, unsent changes, sign-in and assessment sheets stay on this tablet.`, 'Install now', () => {
+      const w = swReg && swReg.waiting; if (!w) { toast('The update is no longer waiting - checking again'); checkUpdate(); return; }
+      installing = true; toast('Installing update…'); w.postMessage({type: 'SKIP_WAITING'});
+      setTimeout(() => { if (installing) location.reload(); }, 4000);
+    });
+  }
+  function appSection() {
+    const btn = upd.ready ? el('button', {type: 'button', class: 'btn update', text: `Update available${upd.version ? ' - ' + upd.version : ''} · Install`, onclick: installUpdate})
+      : el('button', {type: 'button', class: 'btn', text: upd.checking ? 'Checking…' : 'Check for update', disabled: upd.checking, onclick: checkUpdate});
+    return el('div', {class: 'sec'}, el('h3', {text: 'App'}),
+      el('p', {class: 'note', text: upd.ready ? `Version ${APPV} is running. A newer version has downloaded and is ready to install.` : `Version ${APPV}. The app checks for updates when it opens and every 30 minutes; the button turns green when one is ready.`}),
+      el('div', {class: 'row'}, btn));
+  }
+
   // ---------- boot ----------
   applyTheme();
   refreshMe();
   show(store.get('view', 'calls'));
   startGate();
   setNet(outbox.length ? 'warn' : 'wait');
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.serviceWorker.register('sw.js').then((reg) => { swReg = reg; watchReg(reg); }).catch(() => {});
+    let reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (installing && !reloading) { reloading = true; location.reload(); } });
+    setInterval(() => { if (document.visibilityState === 'visible' && swReg && !upd.ready) swReg.update().catch(() => {}); }, 30 * 60000);
+  }
   syncNow(false);
   let lastTry = 0; const tick = () => { const gap = document.visibilityState === 'visible' ? 2 * 60000 : 5 * 60000; if (Date.now() - lastTry >= gap) { lastTry = Date.now(); syncNow(false); } };
   setInterval(tick, 30000);
