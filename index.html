@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content">
 <meta name="theme-color" content="#b3261e">
 <meta name="mobile-web-app-capable" content="yes">
 <title>Station 93</title>
@@ -31,7 +31,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 var(--body);-we
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-.app{position:fixed;inset:0;display:grid;grid-template-columns:96px minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:100dvh}
+.app{position:fixed;inset:0;display:grid;grid-template-columns:96px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
 .rail{overflow-y:auto;min-height:0;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:12px 8px;padding-left:max(8px,env(safe-area-inset-left,0px))}
 .badge{font:700 15px/1 var(--display);letter-spacing:.06em;background:var(--accent);color:var(--accent-fg);border-radius:8px;padding:10px 0;text-align:center;margin-bottom:10px}
 .tabbtn{min-height:68px;border:0;background:none;border-radius:var(--r);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);font:600 13px/1.1 var(--display);letter-spacing:.03em;text-transform:uppercase}
@@ -214,7 +214,7 @@ body:not(.locked) .gate{display:none}
 @media (max-width:640px){
   .app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
   .main{grid-row:1}
-  .rail{grid-row:2;overflow:visible;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));justify-content:space-around}
+  .rail{grid-row:2;overflow:visible;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:6px 8px calc(14px + env(safe-area-inset-bottom,0px));justify-content:space-around}
   .badge{display:none}
   .tabbtn{flex:1;min-height:58px}
   .tabbtn.on{box-shadow:inset 0 3px 0 var(--accent)}
@@ -297,7 +297,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.5.1';
+  const APPV = '1.5.2';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
