@@ -1,5 +1,5 @@
 // Keeps the app itself on the tablet so it opens with no signal. Your data is not stored here.
-const V = 'st93-1.3.0';
+const V = 'st93-1.4.0';
 const SHELL = ['./', './index.html', './config.js', './geo.js', './zones.js', './ntypes.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './splash.jpg'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(V).then((c) => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== V).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
