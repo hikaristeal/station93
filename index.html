@@ -299,7 +299,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.6.0';
+  const APPV = '1.6.1';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -754,7 +754,14 @@ body:not(.locked) .gate{display:none}
       if (probs.length) confirmBox('Check the reading', probs.join(' ') + ' Add the row anyway?', 'Add row', go); else go();
     }
     function okToComplete() {
-      const n = collect(); if (!n) return;
+      const n = collect(); if (!n) return; const again = !!okToComplete.force;
+      const prior = (r.requests || []).filter((q) => q.action === 'review_complete' && q.status !== 'done' && q.status !== 'cancelled').pop();
+      const staged = /draft staged|awaiting|ready to complete|completed/i.test(r.stage || '') || r.email_sent;
+      if ((prior || staged) && !again) {
+        const why = prior ? `It was already handed to Claude ${new Date(prior.at).toLocaleString([], {month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit'})} and is still ${prior.status}.` : `It is already at "${r.stage}"${r.email_sent ? ' and the email was sent' : ''}.`;
+        confirmBox('Already with Claude', why + ' Claude checks Gmail first and updates the existing draft instead of making a second one. Hand it over again anyway?', 'Hand over again', () => { okToComplete.force = true; try { okToComplete(); } finally { okToComplete.force = false; } });
+        return;
+      }
       if (!n.notes.trim() && !n.narrative.trim()) { toast('Add your notes or a narrative first - Claude only writes from what you tell it'); return; }
       const hasN = !!n.narrative.trim(), hasNotes = !!n.notes.trim();
       const prov = el('input', {type: 'radio', name: 'okn', id: 'okp', checked: hasN, disabled: !hasN}); const gen = el('input', {type: 'radio', name: 'okn', id: 'okg', checked: !hasN && hasNotes, disabled: !hasNotes});
@@ -767,9 +774,10 @@ body:not(.locked) .gate{display:none}
         el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn ghost', text: 'Cancel', onclick: closeModal}), el('button', {type: 'button', class: 'btn go', text: 'OK to Complete', onclick: async () => {
           if (!prov.checked && !gen.checked) { toast('Pick which narrative to use'); return; }
           const choice = {narrative_choice: prov.checked ? 'provided' : 'generated', send_approved: send.checked};
-          const req = {action: 'review_complete', label: 'OK to Complete - review, stage, FireWorks', at: nowISO(), status: 'queued', note: choice.narrative_choice === 'provided' ? 'Use provided narrative' : 'Use generated narrative', ...choice};
+          const req = {action: 'review_complete', label: 'OK to Complete - review, stage, FireWorks', at: nowISO(), status: 'queued', note: choice.narrative_choice === 'provided' ? 'Use provided narrative' : 'Use generated narrative', ...choice, dedupe_key: n.cad, repeat: again};
+          (r.requests || []).forEach((q) => { if (q.action === 'review_complete' && q.status === 'queued') q.status = 'superseded'; });
           const saved = await save({stage: 'Draft staged', needs: `With Claude for review · ${choice.narrative_choice === 'provided' ? 'your narrative' : 'generated narrative'}${choice.send_approved ? ' · approved to send' : ''}`, send_approved: choice.send_approved, requests: (r.requests || []).concat([req])});
-          if (!saved) return; await queue(saved, 'review_complete', req.note, choice);
+          if (!saved) return; await queue(saved, 'review_complete', req.note, Object.assign({}, choice, {dedupe_key: n.cad, repeat: req.repeat}));
           closeModal(); close(); render(); toast('Handed to Claude - picked up at the next sync');
         }}))));
     }
