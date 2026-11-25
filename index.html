@@ -299,7 +299,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.6.1';
+  const APPV = '1.7.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -338,7 +338,7 @@ body:not(.locked) .gate{display:none}
       const map = S[coll] || (S[coll] = {}); const cur = map[id];
       map[id] = merge && cur ? Object.assign(cur, data) : Object.assign({}, data);
       if (coll === 'mileage' || coll === 'mileage_archive') map[id].vehicle = map[id].vehicle || id.split('-')[0]; else map[id].id = map[id].id || id;
-      const kind = {reports: 'report.update', crew: 'crew.status', apparatus: 'apparatus.status', mileage: 'mileage.update', mileage_archive: 'mileage.archive'}[coll] || coll + '.update';
+      const kind = coll === 'crew' && 'assigned' in data ? 'crew.assigned' : {reports: 'report.update', crew: 'crew.status', apparatus: 'apparatus.status', mileage: 'mileage.update', mileage_archive: 'mileage.archive'}[coll] || coll + '.update';
       outbox.push({at: nowISO(), kind, id, fields: ['reports', 'mileage', 'mileage_archive'].includes(coll) ? JSON.parse(JSON.stringify(map[id])) : data});
     }
     if (outbox.length > 400) outbox = outbox.slice(-400);
@@ -433,11 +433,13 @@ body:not(.locked) .gate{display:none}
       el('p', {class: 'note', text: 'Pop-ups come from the app itself, so they arrive while Station 93 is open or was used in the last few minutes - Android pauses the app after that, and the Google sign-in renews on your next touch after it runs out (about hourly). Dispatches still come from Bryx first; these cover what Claude and the PC app changed.'}));
   }
 
+  // an apparatus assignment made on this tablet wins until a newer one comes from the PC
+  function keepAssign(cur, inc) { if (!cur || !('assigned' in cur)) return inc; if (newer(cur.assigned_at, inc.assigned_at || '')) return Object.assign({}, inc, {assigned: cur.assigned, assigned_at: cur.assigned_at}); return inc; }
   function mergeSnapshot(snap) {
     let n = 0; const arr = (x) => Array.isArray(x) ? x : Object.values(x || {});
     const pend = new Set(outbox.filter((c) => c.kind === 'report.update').map((c) => String(c.id)));
     for (const inc of arr(snap.reports)) { const id = String(inc.id); const cur = S.reports[id]; if (!cur || newer(inc._mod, cur._mod) || (!inc._mod && !cur._mod && !pend.has(id) && JSON.stringify(inc) !== JSON.stringify(cur))) { if (!cur) pop('call', `New call ${inc.num || id}`, [inc.type, inc.area].filter(Boolean).join(' · '), id); else if (inc.stage && inc.stage !== cur.stage) pop(inc.stage === 'Ready to Complete' ? 'approval' : 'other', `${inc.num || id}: ${inc.stage}`, inc.needs || '', id); S.reports[id] = Object.assign({}, inc, {id}); n++; } }
-    for (const k of ['crew', 'apparatus']) for (const inc of arr(snap[k])) { const id = String(inc.id); const cur = S[k][id]; if (!cur || !newer(cur.status_at, inc.status_at) && JSON.stringify(inc) !== JSON.stringify(cur)) { S[k][id] = Object.assign({}, inc, {id}); n++; } }
+    for (const k of ['crew', 'apparatus']) for (const inc0 of arr(snap[k])) { const id = String(inc0.id); const cur = S[k][id]; const inc = keepAssign(cur, inc0); if (!cur || !newer(cur.status_at, inc.status_at) && JSON.stringify(inc) !== JSON.stringify(cur)) { S[k][id] = Object.assign({}, inc, {id}); n++; } }
     for (const inc of arr(snap.mileage)) { const v = inc.vehicle || inc.id; const cur = S.mileage[v]; if (!cur || inc.page > cur.page || (inc.page === cur.page && (inc.rows || []).length > (cur.rows || []).length)) { S.mileage[v] = Object.assign({}, inc, {vehicle: v}); n++; } }
     return n;
   }
@@ -457,7 +459,7 @@ body:not(.locked) .gate{display:none}
     cfg.seen_ap = cfg.seen_ap || [];
     for (const ap of j.approvals || []) { const key = `${ap.id}|${ap.text}`; if (cfg.seen_ap.includes(key)) continue; cfg.seen_ap.push(key); pop('approval', `${ap.id}: ${ap.text || 'approval'}`, ap.stage || '', String(ap.id)); const r = S.reports[String(ap.id)]; if (r && !newer(r._mod, g)) { if (ap.stage) r.stage = ap.stage; if (ap.needs) r.needs = ap.needs; } notes.push(`${ap.id}: ${ap.text || 'approval'}`); n++; }
     cfg.seen_ap = cfg.seen_ap.slice(-300);
-    for (const k of ['crew', 'apparatus']) for (const inc of j[k] || []) { const cur = S[k][inc.id]; if (!cur || !newer(cur.status_at, inc.status_at || g)) { S[k][inc.id] = Object.assign(cur || {}, inc); n++; } }
+    for (const k of ['crew', 'apparatus']) for (const inc0 of j[k] || []) { const cur = S[k][inc0.id]; const inc = keepAssign(cur, inc0); if (!cur || !newer(cur.status_at, inc.status_at || g)) { S[k][inc.id] = Object.assign(cur || {}, inc); n++; } }
     for (const m of j.mileage || []) { const cur = S.mileage[m.vehicle]; if (!cur || m.page > cur.page || (m.page === cur.page && (m.rows || []).length >= (cur.rows || []).length)) { if (cur && (m.rows || []).length > (cur.rows || []).length) pop('other', `${m.vehicle} mileage`, `Row ${m.rows.length} added`, ''); if (cur && (m.rows || []).length > (cur.rows || []).length) notes.push(`${m.vehicle} mileage: row ${m.rows.length} added`); S.mileage[m.vehicle] = Object.assign(cur || {}, m); n++; } }
     for (const x of j.notices || []) if (x && x.text) { notes.push(String(x.text)); if (!/nothing new/i.test(x.text)) pop('other', 'Station 93', String(x.text), ''); }
     if (j.applied_through_tablet) { outbox = outbox.filter((c) => newer(c.at, j.applied_through_tablet)); store.set('outbox', outbox); }
@@ -830,12 +832,30 @@ body:not(.locked) .gate{display:none}
     render();
   }
   function seg(coll, row) { return el('div', {class: 'seg'}, el('button', {type: 'button', class: row.status === 'In service' ? 'on-in' : '', text: 'In service', onclick: () => setStatus(coll, row, 'In service')}), el('button', {type: 'button', class: row.status === 'Out of service' ? 'on-out' : '', text: 'Out of service', onclick: () => setStatus(coll, row, 'Out of service')})); }
+  async function setAssigned(c, list) {
+    const assigned = [...new Set(list)].join(', '); c.assigned = assigned; c.assigned_at = nowISO();
+    await put('crew/' + c.id, {assigned, assigned_at: c.assigned_at, _mod: c.assigned_at}, true);
+    render(); toast(`${c.name}: ${assigned || 'no apparatus'}`);
+  }
   function renderCrew() {
     const v = $('#v-crew'); v.replaceChildren();
     const ap = Object.values(S.apparatus).sort((a, b) => a.unit.localeCompare(b.unit)); const cr = Object.values(S.crew).sort((a, b) => (b.name === ME) - (a.name === ME) || a.name.localeCompare(b.name));
     if (!ap.length && !cr.length) { v.append(el('div', {class: 'empty', text: S.ready ? 'No crew or apparatus yet.' : 'Loading…'})); return; }
-    v.append(el('h2', {style: 'font:700 20px var(--display);margin:0 0 10px', text: 'Apparatus'}), el('div', {class: 'cards'}, ap.map((a) => el('div', {class: 'card ' + (a.status === 'In service' ? 'in' : a.status === 'Out of service' ? 'out' : '')}, el('div', {class: 'row'}, el('b', {text: a.unit}), el('span', {class: 'grow'}), el('span', {class: 'note', text: a.status || 'Not set'})), el('div', {class: 'note', text: cr.filter((c) => units(c.assigned).includes(a.unit)).map((c) => c.name).join(', ') || 'No crew assigned'}), seg('apparatus', a)))),
-      el('h2', {style: 'font:700 20px var(--display);margin:20px 0 10px', text: 'Crew'}), el('div', {class: 'cards'}, cr.map((c) => el('div', {class: 'card ' + (c.status === 'In service' ? 'in' : c.status === 'Out of service' ? 'out' : '')}, el('div', {class: 'row'}, el('b', {text: c.name + (c.number && c.number !== '—' ? ` #${c.number}` : '')}), el('span', {class: 'grow'}), el('span', {class: 'note', text: c.status || 'Not set'})), el('div', {class: 'note', text: [c.role, units(c.assigned).join(', ') ? 'On ' + units(c.assigned).join(', ') : ''].filter(Boolean).join(' · ')}), seg('crew', c)))));
+    const chip = (text, title, fn) => el('button', {type: 'button', class: 'member', title, text: text + ' ×', onclick: fn});
+    v.append(el('h2', {style: 'font:700 20px var(--display);margin:0 0 10px', text: 'Apparatus'}), el('div', {class: 'cards'}, ap.map((a) => {
+      const on = cr.filter((c) => units(c.assigned).includes(a.unit));
+      const add = el('select', {'aria-label': 'Assign crew to ' + a.unit}, el('option', {value: '', text: '+ Assign crew'}), cr.filter((c) => !on.includes(c)).map((c) => el('option', {value: c.id, text: c.name + (c.number && c.number !== '—' ? ` (#${c.number})` : '')})));
+      add.addEventListener('change', () => { const c = S.crew[add.value]; if (c) setAssigned(c, units(c.assigned).concat([a.unit])); });
+      return el('div', {class: 'card ' + (a.status === 'In service' ? 'in' : a.status === 'Out of service' ? 'out' : '')}, el('div', {class: 'row'}, el('b', {text: a.unit}), el('span', {class: 'grow'}), el('span', {class: 'note', text: a.status || 'Not set'})),
+        el('div', {class: 'row'}, on.length ? on.map((c) => chip(c.name, `Take ${c.name} off ${a.unit}`, () => setAssigned(c, units(c.assigned).filter((u) => u !== a.unit)))) : el('span', {class: 'note', text: 'No crew assigned'})), add, seg('apparatus', a));
+    })),
+      el('h2', {style: 'font:700 20px var(--display);margin:20px 0 10px', text: 'Crew'}), el('div', {class: 'cards'}, cr.map((c) => {
+        const mine = units(c.assigned);
+        const add = el('select', {'aria-label': 'Add apparatus for ' + c.name}, el('option', {value: '', text: mine.length ? '+ Add apparatus' : 'Not assigned - add…'}), ap.map((a) => a.unit).filter((u) => !mine.includes(u)).map((u) => el('option', {value: u, text: u})));
+        add.addEventListener('change', () => { if (add.value) setAssigned(c, mine.concat([add.value])); });
+        return el('div', {class: 'card ' + (c.status === 'In service' ? 'in' : c.status === 'Out of service' ? 'out' : '')}, el('div', {class: 'row'}, el('b', {text: c.name + (c.number && c.number !== '—' ? ` #${c.number}` : '')}), el('span', {class: 'grow'}), el('span', {class: 'note', text: c.status || 'Not set'})), el('div', {class: 'note', text: c.role || ''}),
+          el('div', {class: 'row'}, el('span', {class: 'note', text: 'On apparatus:'}), mine.map((u) => chip(u, `Take ${c.name} off ${u}`, () => setAssigned(c, mine.filter((x) => x !== u)))), add), seg('crew', c));
+      })));
   }
   function renderSvc() {
     const me = Object.values(S.crew).find((c) => c.name === ME); const b = $('#svcBtn'); if (!me) { b.hidden = true; return; } b.hidden = false;
