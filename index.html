@@ -227,6 +227,7 @@ body:not(.locked) .gate{display:none}
 .svc.lockb{display:inline-flex;align-items:center;gap:6px}.svc.lockb svg{width:18px;height:18px}
 .userlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.userlist li{display:flex;align-items:center;gap:8px;min-height:44px;border-bottom:1px solid var(--line)}
 /* v2.1 */
+.mscroll{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}.mscroll .mtable{border:0;border-radius:0;overflow:visible}.mscroll thead th{position:sticky;top:0;background:var(--panel);z-index:1;box-shadow:inset 0 -1px 0 var(--line)}.mscroll tfoot td{position:sticky;bottom:0;background:var(--sunk);font-weight:700}
 .gmapwrap{touch-action:auto}.gmapwrap>div{width:100%;height:100%}
 .crewpicks{display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow:auto}.crewpick{border:1px solid var(--line);border-radius:var(--r);padding:4px 10px}
 .steps{display:flex;gap:3px;margin-top:6px;max-width:220px}.steps i{flex:1;height:6px;border-radius:3px;background:var(--line)}.steps i.on{background:var(--ok)}
@@ -343,7 +344,7 @@ body.bd-night .app{filter:brightness(.88)}
 <script>
 (function () {
   'use strict';
-  const APPV = '2.3.1';
+  const APPV = '2.4.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -1291,13 +1292,12 @@ body.bd-night .app{filter:brightness(.88)}
       if (r.test) { const saved = await save(); if (!saved) return; await put('reports/' + saved.id, {cleared_at: nowISO(), needs: 'Test call - cleared (no mileage)'}, true); toast('Test call cleared - no mileage row added'); close(); render(); return; }
       const m = S.mileage[v]; if (!m) { toast('Pick a unit'); return; }
       const dec = v === 'A903'; if (dec && !/^\d{6}\.\d$/.test(end)) { toast('A903 needs tenths: 000000.0 (for example 166382.4)'); return; } if (!dec && !/^\d+$/.test(end)) { toast('Enter the ending reading'); return; }
-      if ((m.rows || []).length >= 16) { toast(`${v} page is full - start a new page on the Mileage tab`); return; }
       const last = (m.rows || [])[m.rows.length - 1]; const beg = last ? last.end : '';
       const go = async () => {
         const saved = await save(); if (!saved) return;
         const d = new Date(); const t = saved.type || ''; const purpose = /fire|alarm|smoke|brush|grass/i.test(t) ? 'Fire - ' + t : /tree|line|service|hazard|storm|public/i.test(t) ? 'Service - ' + t : 'EMS - ' + t;
         const row = {date: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`, beg, end, beg_h: last ? (last.end_h || '') : '', end_h: endh, purpose, comments: `CAD ${saved.cad} - ${t}`.trim(), initials: myInitials()};
-        m.rows = (m.rows || []).concat([row]); await put('mileage/' + v, m);
+        await addMileRow(v, row);
         const miss = []; if (!saved.unitcrew.some((u) => u.members.length)) miss.push('crew'); if (!saved.notes.trim()) miss.push('notes'); if (!saved.narrative.trim()) miss.push('narrative'); if (!saved.zone || saved.zone === '—') miss.push('zone');
         const upd = {cleared_at: nowISO(), cleared_miles: end}; if (saved.stage === 'Needs info') upd.needs = miss.length ? 'Cleared - needs ' + miss.join(', ') : 'Cleared - ready for narrative review';
         Object.assign(saved, upd); await put('reports/' + saved.id, upd, true);
@@ -1439,12 +1439,11 @@ body.bd-night .app{filter:brightness(.88)}
         if (v) {
           const m = S.mileage[v]; const e = end.value.trim(); const dec = v === 'A903';
           if (dec && !/^\d{6}\.\d$/.test(e)) { toast('A903 needs tenths: 000000.0'); return; } if (!dec && !/^\d+$/.test(e)) { toast('Enter the ending reading'); return; }
-          if ((m.rows || []).length >= 16) { toast(`${v} page is full - start a new page on the Mileage tab, then clear`); return; }
           const last = (m.rows || [])[m.rows.length - 1]; const beg = last ? last.end : '';
           if (beg && Number(e) <= Number(beg)) { toast(`End ${e} is not higher than the last reading ${beg}`); return; }
           const d = new Date(); const t = r.type || ''; const purpose = /fire|alarm|smoke|brush|grass/i.test(t) ? 'Fire - ' + t : /tree|line|service|hazard|storm|public/i.test(t) ? 'Service - ' + t : 'EMS - ' + t;
           row = {date: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`, beg, end: e, beg_h: last ? (last.end_h || '') : '', end_h: endH.value.trim(), purpose, comments: `CAD ${r.cad} - ${t}`.trim(), initials: myInitials()};
-          m.rows = (m.rows || []).concat([row]); await put('mileage/' + v, m);
+          await addMileRow(v, row);
         }
         closeModal();
         const now = nowISO(); const miss = []; if (!(r.unitcrew || []).some((u) => u.members && u.members.length)) miss.push('crew'); if (!String(r.notes || '').trim()) miss.push('notes'); if (!String(r.narrative || '').trim()) miss.push('narrative');
@@ -1465,33 +1464,57 @@ body.bd-night .app{filter:brightness(.88)}
   function confirmBox(title, text, yes, fn) { modal(el('div', {class: 'box', role: 'dialog', 'aria-label': title}, el('h2', {text: title}), el('p', {text}), el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn ghost', text: 'Cancel', onclick: closeModal}), el('button', {type: 'button', class: 'btn primary', text: yes, onclick: () => { closeModal(); fn(); }})))); }
 
   // ---------- mileage ----------
-  let milV = store.get('milV', 'A903');
+  // ---------- mileage: one log per vehicle per month, as many rows as the month needs ----------
+  const rowMonth = (d) => { const x = /^(\d\d)\/\d\d\/(\d\d)$/.exec(d || ''); return x ? `20${x[2]}-${x[1]}` : ''; };
+  const logMonth = (m) => (m && (m.month || rowMonth(((m.rows || [])[0] || {}).date))) || '';
+  const monthName = (ym) => { const [y, mo] = String(ym || '').split('-').map(Number); return y ? new Date(y, mo - 1, 1).toLocaleDateString([], {month: 'long', year: 'numeric'}) : 'This month'; };
+  async function addMileRow(v, row) {
+    const m = S.mileage[v]; const ym = rowMonth(row.date) || isoToday().slice(0, 7); const cur = logMonth(m);
+    if ((m.rows || []).length && cur && ym > cur) {   // a new month: the finished month goes to the archive and is queued for the official log sheets
+      await put(`mileage_archive/${v}-p${m.page}`, JSON.parse(JSON.stringify(Object.assign({}, m, {month: cur}))));
+      await put(`requests/mileage-${v}-p${m.page}`, {action: 'mileage_page', label: `${v} ${monthName(cur)} log`, vehicle: v, page: m.page, month: cur, rows: m.rows.length, status: 'queued', at: nowISO(), from: 'tablet'});
+      toast(`${v}: ${monthName(cur)} log closed - ${monthName(ym)} started`);
+      m.page = (Number(m.page) || 0) + 1; m.rows = []; m.month = ym;
+    }
+    if (!m.month) m.month = cur || ym;
+    m.rows = (m.rows || []).concat([row]); await put('mileage/' + v, m); return m;
+  }
+  let milV = store.get('milV', 'A903'), milMonth = '';
   function renderMileage() {
     const v = $('#v-mileage'); v.replaceChildren();
     const vehs = Object.keys(S.mileage).sort(); if (!vehs.length) { v.append(el('div', {class: 'empty', text: S.ready ? 'No mileage logs yet.' : 'Loading mileage…'})); return; }
     if (!S.mileage[milV]) milV = vehs[0];
-    const m = S.mileage[milV]; const rows = m.rows || []; const last = rows[rows.length - 1]; const hrs = milV === 'EG906'; const dec = milV === 'A903';
-    v.append(el('div', {class: 'row'}, vehs.map((x) => el('button', {type: 'button', class: 'chip' + (x === milV ? ' on' : ''), text: x, onclick: () => { milV = x; store.set('milV', x); renderMileage(); }})), el('span', {class: 'grow'}), el('span', {class: 'pill', text: `Page ${m.page} · ${rows.length} of 16`})));
-    const d = new Date(); const today = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`;
-    const fi = {}; const mk = (k, ph, val, w) => { fi[k] = el('input', {type: 'text', placeholder: ph, value: val || '', inputmode: /beg|end/.test(k) ? 'decimal' : null}); return el('label', {class: w || ''}, ph, fi[k]); };
-    const form = el('div', {class: 'sec', style: 'margin-top:12px'}, el('h3', {text: `Add a row - ${milV}`}), el('div', {class: 'grid'},
-      mk('date', 'Date', today), mk('beg', dec ? 'Begin (000000.0)' : 'Begin miles', last ? last.end : ''), mk('end', dec ? 'End (000000.0)' : 'End miles'), hrs ? mk('end_h', 'End hours') : el('span'),
-      mk('purpose', 'Purpose', '', 'span2'), mk('comments', 'Comments', '', 'span2')), el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn primary', text: 'Add row', onclick: async () => {
-        if (rows.length >= 16) { toast('This page is full - start a new page'); return; }
-        const row = {date: fi.date.value.trim(), beg: fi.beg.value.trim(), end: fi.end.value.trim(), beg_h: last ? (last.end_h || '') : '', end_h: fi.end_h ? fi.end_h.value.trim() : '', purpose: fi.purpose.value.trim(), comments: fi.comments.value.trim(), initials: myInitials()};
-        if (dec && (!/^\d{6}\.\d$/.test(row.beg) || !/^\d{6}\.\d$/.test(row.end))) { toast('A903 needs tenths: 000000.0'); return; }
-        if (!row.purpose) { toast('Add a purpose'); return; }
-        const doIt = async () => { m.rows = rows.concat([row]); await put('mileage/' + milV, m); toast(`${milV} row ${m.rows.length} added`); renderMileage(); };
-        const probs = []; if (Number(row.end) <= Number(row.beg)) probs.push('End is not higher than begin.'); if (last && row.beg !== last.end) probs.push(`Begin ${row.beg} doesn't match the last end ${last.end}.`); if (Number(row.end) - Number(row.beg) > 200) probs.push('Over 200 miles in one row.');
-        if (probs.length) confirmBox('Check the readings', probs.join(' ') + ' Add it anyway?', 'Add row', doIt); else doIt();
-      }}), rows.length >= 16 ? el('button', {type: 'button', class: 'btn', text: 'Start new page', onclick: () => confirmBox(`Start ${milV} page ${m.page + 1}?`, `Page ${m.page} is full. Claude will be asked to email the finished page (in a chat).`, 'Start page', async () => {
-        await put(`mileage_archive/${milV}-p${m.page}`, JSON.parse(JSON.stringify(m)));
-        await put(`requests/mileage-${milV}-p${m.page}`, {action: 'mileage_page', vehicle: milV, page: m.page, status: 'queued', at: nowISO(), from: 'tablet'});
-        m.page += 1; m.rows = []; await put('mileage/' + milV, m); renderMileage(); toast('New page started');
-      })}) : null));
-    v.append(form);
-    const tb = el('tbody'); for (let i = 0; i < 16; i++) { const r = rows[i]; tb.append(el('tr', {}, el('td', {class: 'n', text: String(i + 1)}), el('td', {class: 'n', text: r ? r.date : ''}), el('td', {class: 'n', text: r ? r.beg + (hrs && r.beg_h ? ' / ' + r.beg_h : '') : ''}), el('td', {class: 'n', text: r ? r.end + (hrs && r.end_h ? ' / ' + r.end_h : '') : ''}), el('td', {class: 'n', text: r && r.end && r.beg ? (dec ? (Number(r.end) - Number(r.beg)).toFixed(1) : String(Number(r.end) - Number(r.beg))) : ''}), el('td', {text: r ? r.purpose : ''}), el('td', {text: r ? r.comments : ''}))); }
-    v.append(el('div', {class: 'scroll', style: 'margin-top:12px'}, el('table', {class: 'mtable'}, el('thead', {}, el('tr', {}, ['#', 'Date', 'Begin', 'End', 'Miles', 'Purpose', 'Comments'].map((h) => el('th', {text: h})))), tb)));
+    const cur = S.mileage[milV]; const hrs = milV === 'EG906'; const dec = milV === 'A903';
+    const arch = Object.entries(S.mileage_archive || {}).filter(([k, x]) => (x.vehicle || k.split('-')[0]) === milV).map(([k, x]) => Object.assign({key: k}, x)).sort((a, b) => (Number(b.page) || 0) - (Number(a.page) || 0));
+    const label = (x) => x.month ? monthName(x.month) : `Page ${x.page}${(x.rows || []).length ? ` (${x.rows[0].date} - ${x.rows[x.rows.length - 1].date})` : ''}`;
+    const viewing = milMonth ? arch.find((x) => x.key === milMonth) : null; const m = viewing || cur; const rows = m.rows || []; const last = (cur.rows || [])[(cur.rows || []).length - 1];
+    const diff = (r) => r && r.end !== '' && r.beg !== '' && r.end != null && r.beg != null ? Number(r.end) - Number(r.beg) : null;
+    const miles = rows.reduce((t, r) => t + (diff(r) > 0 ? diff(r) : 0), 0); const hours = hrs ? rows.reduce((t, r) => t + (Number(r.end_h) - Number(r.beg_h) > 0 ? Number(r.end_h) - Number(r.beg_h) : 0), 0) : 0;
+    const curName = monthName(logMonth(cur) || isoToday().slice(0, 7));
+    v.append(el('div', {class: 'row'}, vehs.map((x) => el('button', {type: 'button', class: 'chip' + (x === milV ? ' on' : ''), text: x, onclick: () => { milV = x; milMonth = ''; store.set('milV', x); renderMileage(); }})), el('span', {class: 'grow'}),
+      el('span', {class: 'pill', text: `${viewing ? label(viewing) : curName} · ${rows.length} row${rows.length === 1 ? '' : 's'} · ${dec ? miles.toFixed(1) : Math.round(miles)} mi${hrs ? ` · ${Math.round(hours)} h` : ''}`})));
+    if (arch.length) v.append(el('div', {class: 'row', style: 'margin-top:8px'}, el('span', {class: 'note', text: 'Month:'}), el('button', {type: 'button', class: 'chip' + (!viewing ? ' on' : ''), text: `${curName} (current)`, onclick: () => { milMonth = ''; renderMileage(); }}),
+      arch.slice(0, 12).map((x) => el('button', {type: 'button', class: 'chip' + (viewing && viewing.key === x.key ? ' on' : ''), text: label(x), onclick: () => { milMonth = x.key; renderMileage(); }}))));
+    if (!viewing) {
+      const d = new Date(); const today = `${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}/${String(d.getFullYear()).slice(2)}`;
+      const fi = {}; const mk = (k, ph, val, w) => { fi[k] = el('input', {type: 'text', placeholder: ph, value: val || '', inputmode: /beg|end/.test(k) ? 'decimal' : null}); return el('label', {class: w || ''}, ph, fi[k]); };
+      v.append(el('details', {class: 'sec', style: 'margin-top:12px'}, el('summary', {}, el('b', {text: `Add a row - ${milV}`})), el('div', {class: 'grid', style: 'margin-top:10px'},
+        mk('date', 'Date', today), mk('beg', dec ? 'Begin (000000.0)' : 'Begin miles', last ? last.end : ''), mk('end', dec ? 'End (000000.0)' : 'End miles'), hrs ? mk('end_h', 'End hours') : el('span'),
+        mk('purpose', 'Purpose', '', 'span2'), mk('comments', 'Comments', '', 'span2')), el('div', {class: 'row', style: 'margin-top:8px'}, el('button', {type: 'button', class: 'btn primary', text: 'Add row', onclick: async () => {
+          const row = {date: fi.date.value.trim(), beg: fi.beg.value.trim(), end: fi.end.value.trim(), beg_h: last ? (last.end_h || '') : '', end_h: fi.end_h ? fi.end_h.value.trim() : '', purpose: fi.purpose.value.trim(), comments: fi.comments.value.trim(), initials: myInitials()};
+          if (!/^\d\d\/\d\d\/\d\d$/.test(row.date)) { toast('Date looks like 11/26/26'); return; }
+          if (dec && (!/^\d{6}\.\d$/.test(row.beg) || !/^\d{6}\.\d$/.test(row.end))) { toast('A903 needs tenths: 000000.0'); return; }
+          if (!row.purpose) { toast('Add a purpose'); return; }
+          const doIt = async () => { await addMileRow(milV, row); toast(`${milV} row added`); renderMileage(); };
+          const probs = []; if (Number(row.end) <= Number(row.beg)) probs.push('End is not higher than begin.'); if (last && row.beg !== last.end) probs.push(`Begin ${row.beg} doesn't match the last end ${last.end}.`); if (Number(row.end) - Number(row.beg) > 200) probs.push('Over 200 miles in one row.');
+          if (probs.length) confirmBox('Check the readings', probs.join(' ') + ' Add it anyway?', 'Add row', doIt); else doIt();
+        }}), el('span', {class: 'note', text: 'Clear call adds rows automatically. The first row of a new month starts that month\'s log.'}))));
+    } else v.append(el('p', {class: 'note', style: 'margin-top:10px', text: viewing.month ? 'Finished month - read only.' : 'Finished page from the old 16-row log - read only.'}));
+    const fmtR = (x, h) => x === '' || x == null ? '' : x + (hrs && h ? ' / ' + h : '');
+    const tb = el('tbody', {}, rows.length ? rows.map((r, i) => el('tr', {}, el('td', {class: 'n', text: String(i + 1)}), el('td', {class: 'n', text: r.date || ''}), el('td', {class: 'n', text: fmtR(r.beg, r.beg_h)}), el('td', {class: 'n', text: fmtR(r.end, r.end_h)}), el('td', {class: 'n', text: diff(r) == null ? '' : dec ? diff(r).toFixed(1) : String(diff(r))}), el('td', {text: r.purpose || ''}), el('td', {text: r.comments || ''}), el('td', {class: 'n', text: r.initials || ''}))) : [el('tr', {}, el('td', {colspan: '8', class: 'note', text: 'No rows yet this month.'}))]);
+    const tf = el('tfoot', {}, el('tr', {}, el('td', {colspan: '4', text: 'Month total'}), el('td', {class: 'n', text: dec ? miles.toFixed(1) : String(Math.round(miles))}), el('td', {colspan: '3', class: 'note', text: hrs ? `${Math.round(hours)} engine hours` : ''})));
+    const box = el('div', {class: 'mscroll', style: 'margin-top:12px'}, el('table', {class: 'mtable'}, el('thead', {}, el('tr', {}, ['#', 'Date', 'Begin', 'End', 'Miles', 'Purpose', 'Comments', 'By'].map((h) => el('th', {text: h})))), tb, tf));
+    v.append(box); if (!viewing) requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
   }
 
   // ---------- crew & apparatus ----------
