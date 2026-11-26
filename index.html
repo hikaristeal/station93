@@ -318,7 +318,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.8.1';
+  const APPV = '1.8.2';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -653,7 +653,7 @@ body:not(.locked) .gate{display:none}
     const sheet = el('div', {class: 'sheet', role: 'dialog', 'aria-label': 'Call'},
       el('div', {class: 'bar'}, el('button', {type: 'button', class: 'btn ghost', text: '← Calls', onclick: close}), el('h2', {text: orig ? (orig.test ? `Test call ${orig.cad}` : `Call ${r.num}`) : 'New call'}), el('span', {class: 'grow'}), orig ? el('button', {type: 'button', class: 'btn primary', text: 'Respond', onclick: () => { close(); openResponse(orig.id); }}) : null, el('span', {class: 'pill c-' + (CLS[r.stage] || 'done'), text: r.stage})),
       el('div', {class: 'body'}, body),
-      el('div', {class: 'foot'}, el('button', {type: 'button', class: 'btn ghost', text: 'Close', onclick: close}), el('button', {type: 'button', class: 'btn primary', text: 'Save', onclick: () => save()})));
+      el('div', {class: 'foot'}, el('button', {type: 'button', class: 'btn ghost', text: 'Close', onclick: close}), el('button', {type: 'button', class: 'btn', text: 'Save & Respond', onclick: async () => { const sv = await save(); if (sv) { close(); openResponse(sv.id); } }}), el('button', {type: 'button', class: 'btn primary', text: 'Save', onclick: () => save()})));
     host.append(sheet); document.body.style.overflow = 'hidden';
     function close() { host.replaceChildren(); document.body.style.overflow = ''; }
 
@@ -853,8 +853,9 @@ body:not(.locked) .gate{display:none}
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       const mic = SR ? el('button', {type: 'button', class: 'btn', text: '🎤 Talk', 'aria-label': 'Dictate a note', onclick: () => { try { const rec = new SR(); rec.lang = 'en-US'; rec.interimResults = false; rec.onresult = (e) => { note.value = (note.value + ' ' + e.results[0][0].transcript).trim(); }; rec.onerror = () => toast('Dictation is not available - use the keyboard mic'); rec.start(); toast('Listening…'); } catch (e) { toast('Dictation is not available - use the keyboard mic'); } }}) : null;
       host.replaceChildren(
-        el('div', {class: 'rtop'}, el('h2', {text: `Response · ${r.num}`}), el('button', {type: 'button', text: 'Full call sheet', onclick: () => { host.remove(); openCall(id); }}), el('button', {type: 'button', text: 'Minimize', onclick: () => { host.remove(); render(); }})),
+        el('div', {class: 'rtop'}, el('h2', {text: r.test ? `TEST response · ${r.cad}` : `Response · ${r.num}`}), el('button', {type: 'button', text: 'Full call sheet', onclick: () => { host.remove(); openCall(id); }}), el('button', {type: 'button', text: 'Minimize', onclick: () => { host.remove(); render(); }})),
         el('div', {class: 'rbody'},
+          r.test ? el('p', {class: 'note', style: 'color:var(--warn);font-weight:600;font-size:15px', text: 'Practice run - times and notes stay on this tablet. Clear adds no mileage and does not change your service status.'}) : null,
           el('div', {class: 'rcall'}, el('b', {text: r.type || 'Call'}), el('span', {text: [r.area, r.zone && r.zone !== '—' ? r.zone : '', r.units].filter(Boolean).join(' · ')})),
           el('div', {class: 'rstamps'}, STAMPS.map(([k, label]) => el('button', {type: 'button', class: 'rstamp' + (k === 'cleared' ? ' clear' : '') + (resp[k] ? ' set' : ''), onclick: () => {
             if (k === 'cleared') { clearFromResponse(); return; }
@@ -865,6 +866,7 @@ body:not(.locked) .gate{display:none}
           r.notes ? el('ol', {class: 'rlog'}, r.notes.split('\n').filter(Boolean).slice(-8).map((x) => el('li', {text: x}))) : el('p', {class: 'note', text: 'Notes you add show here and go into the call notes.'})));
     }
     function clearFromResponse() {
+      if (r.test) { confirmBox('Clear the test call?', 'Stamps Clear and ends the practice run. No mileage row, no service change.', 'Clear test call', async () => { const now = nowISO(); await save({resp: Object.assign({}, r.resp || {}, {cleared: now}), cleared_at: now, needs: 'Test call - cleared'}); store.set('resp', ''); keepAwake(false); host.remove(); render(); toast(`Test call ${r.cad} cleared`); }); return; }
       const mine = units((Object.values(S.crew).find((c) => c.name === ME) || {}).assigned);
       const onCall = (r.unitcrew || []).map((u) => u.unit).concat(units(r.units));
       const vehs = Object.keys(S.mileage).sort(); const pick = vehs.find((v) => onCall.includes(v)) || vehs.find((v) => mine.includes(v)) || vehs[0];
