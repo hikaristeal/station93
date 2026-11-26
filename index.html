@@ -226,6 +226,29 @@ body:not(.locked) .gate{display:none}
 .svc.iconb[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .svc.lockb{display:inline-flex;align-items:center;gap:6px}.svc.lockb svg{width:18px;height:18px}
 .userlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.userlist li{display:flex;align-items:center;gap:8px;min-height:44px;border-bottom:1px solid var(--line)}
+/* v2.1 */
+.steps{display:flex;gap:3px;margin-top:6px;max-width:220px}.steps i{flex:1;height:6px;border-radius:3px;background:var(--line)}.steps i.on{background:var(--ok)}
+.steps.big{max-width:none;gap:6px;margin:0}.steps.big span{flex:1;display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted);text-align:center}.steps.big span i{height:8px;border-radius:4px;background:var(--line);display:block}.steps.big span.on{color:var(--fg)}.steps.big span.on i{background:var(--ok)}
+.reppill{color:var(--blue);font-weight:600}
+.addrnote{border-left:5px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--panel));border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.checklist{display:flex;flex-direction:column}.checkrow{display:flex;gap:8px;align-items:center;min-height:50px;border-bottom:1px solid var(--line)}.opt.bad{background:var(--bad);border-color:var(--bad);color:#fff}
+.checkout{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}.checkout .fix b{color:var(--bad)}.checkout .check b{color:var(--warn)}
+.warnline{color:var(--warn)!important;font-weight:600}
+.rings{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-around}.ring{position:relative;width:150px;border:0;background:none;color:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px}.ring .ringsvg{width:120px;height:120px;transform:rotate(-90deg)}.ring .rbg{fill:none;stroke:var(--sunk);stroke-width:10}.ring .rfg{fill:none;stroke:var(--ok);stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1.1s ease}.ring b{position:absolute;top:48px;font:700 26px var(--display)}.ring span{font-weight:600}.ring small{color:var(--muted)}
+.stagebar{background:none;border:0;width:100%;text-align:left;padding:2px 0;color:inherit}.c-bg-needs{background:var(--warn)!important}.c-bg-draft,.c-bg-c9{background:var(--blue)!important}.c-bg-ready{background:var(--ok)!important}.c-bg-blocked{background:var(--bad)!important}
+.streak{margin:-4px 0 12px;font-size:13px;color:var(--ok);font-weight:600}.streak.paused{color:var(--warn)}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}.confetti i{position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.tlwrap svg{width:100%;height:auto;max-height:170px}.tlbase{stroke:var(--line);stroke-width:6;stroke-linecap:round}.tlrun{stroke:var(--accent);stroke-width:6;stroke-linecap:round;stroke-dasharray:600;stroke-dashoffset:600;animation:tldraw 1.4s ease forwards}.tlgoal{stroke:var(--ok);stroke-width:2;stroke-dasharray:5 4}.tlgt{fill:var(--ok);font:600 12px var(--body)}.tldot{fill:var(--panel);stroke:var(--accent);stroke-width:3;opacity:0;animation:tlpop .3s ease forwards}.tlt{fill:var(--fg);font:600 12px var(--body)}.tlh{fill:var(--muted);font:500 11px var(--mono)}@keyframes tldraw{to{stroke-dashoffset:0}}@keyframes tlpop{to{opacity:1}}
+body.bd-overdue{background:color-mix(in srgb,var(--warn) 7%,var(--bg))}body.bd-overdue .top{box-shadow:inset 0 -4px 0 var(--warn)}
+body.bd-call{background:color-mix(in srgb,var(--accent) 8%,var(--bg))}body.bd-call .top{animation:bdpulse 2.4s ease-in-out infinite}@keyframes bdpulse{0%,100%{box-shadow:inset 0 -4px 0 var(--accent)}50%{box-shadow:inset 0 -4px 0 var(--accent),inset 0 0 70px color-mix(in srgb,var(--accent) 35%,transparent)}}
+body.bd-night .app{filter:brightness(.88)}
+.tv{position:fixed;inset:0;z-index:50;background:#0f1211;color:#eef2ef;display:flex;flex-direction:column;padding:2vh 2.5vw;gap:2vh;overflow:auto}.tv .tvtop{display:flex;align-items:baseline;gap:2vw;flex-wrap:wrap}.tv h1{margin:0;font:700 4vh var(--display);letter-spacing:.04em}.tv .clock{margin-left:auto;font:700 7vh/1 var(--display);font-variant-numeric:tabular-nums}.tv .tvdate{font-size:2.4vh;color:#9aa49d}
+.tv .tvcall{background:#b3261e;border-radius:14px;padding:2vh 2vw;font:700 5vh/1.15 var(--display);animation:tvpulse 2s ease-in-out infinite}.tv .tvcall small{display:block;font:600 2.6vh var(--body);opacity:.95;margin-top:.6vh}@keyframes tvpulse{50%{filter:brightness(1.22)}}
+.tv .tvgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2vw;flex:1}.tv .tvbox{background:#1b201d;border-radius:14px;padding:1.6vh 1.4vw;display:flex;flex-direction:column;gap:1vh;min-width:0}.tv .tvbox h2{margin:0;font:700 2.6vh var(--display);letter-spacing:.08em;text-transform:uppercase;color:#9aa49d}
+.tv .tvrow{display:flex;gap:1vw;align-items:center;font-size:2.4vh;border-bottom:1px solid #2b322e;padding:.6vh 0;min-width:0}.tv .tvrow b{font:700 2.8vh var(--display);min-width:6vw}.tv .tvrow .grow{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tv .in{color:#46b077}.tv .out{color:#ef6359}
+.tv .sec{background:none;border:0;padding:0;color:inherit}.tv .sec h3{color:#9aa49d}.tv .ring span,.tv .ring small,.tv .note{color:#cfd6d1}.tv .ring .rbg{stroke:#2b322e}.tv .tvexit{position:fixed;right:1.5vw;bottom:1.5vh;opacity:.45;background:#1b201d;color:#eef2ef;border-color:#2b322e}.tv .tvexit:hover,.tv .tvexit:focus{opacity:1}
+@media (max-width:900px){.tv .tvgrid{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.tlrun{animation:none;stroke-dashoffset:0}.tldot{animation:none;opacity:1}.ring .rfg{transition:none}body.bd-call .top{animation:none;box-shadow:inset 0 -6px 0 var(--accent)}.tv .tvcall{animation:none}}
 @media (max-width:820px){
   .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -318,7 +341,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '2.0.0';
+  const APPV = '2.1.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -327,7 +350,7 @@ body:not(.locked) .gate{display:none}
   const fmtDate = (s) => { const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(s || ''); return m ? `${m[2]}/${m[3]}` : '—'; };
   const units = (s) => String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
   const toast = (m) => { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 3000); };
-  const store = {get(k, d) { try { const v = localStorage.getItem('st93t.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('st93t.' + k, JSON.stringify(v)); } catch (e) { /* storage off */ } }};
+  const store = {get(k, d) { try { const v = localStorage.getItem('st93t.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { if (window.__st93wiped) return; try { localStorage.setItem('st93t.' + k, JSON.stringify(v)); } catch (e) { /* storage off */ } }};
 
   const STAGES = ['Needs info', 'Draft staged', 'Awaiting C9', 'Ready to Complete', 'Blocked', "Other's report", 'Completed'];
   const OPEN = STAGES.slice(0, 5);
@@ -341,10 +364,19 @@ body:not(.locked) .gate{display:none}
   function refreshMe() { const m = meRec(); if (m) { ME = m.name; store.set('me', ME); $('#subT').textContent = `Argyle Fire · ${m.name}${m.number ? ' #' + m.number : ''}`; } }
 
   // ---------- state: kept on this tablet, synced through Google Drive ----------
-  const S = {reports: {}, crew: {}, apparatus: {}, mileage: {}, mileage_archive: {}, requests: {}, servicelog: {}, ready: false};
+  const S = {reports: {}, crew: {}, apparatus: {}, mileage: {}, mileage_archive: {}, requests: {}, servicelog: {}, checks: {}, devices: {}, ready: false};
+  let DEK = null, vaultReady = false, vault = {notes: {}, sheets: {}, addr: {}};
+  const hasVault = () => { try { return !!localStorage.getItem('st93t.secret'); } catch (e) { return false; } };
   let net = 'wait', view = 'calls';
   (function loadLocal() { const d = store.get('data', null); if (d) { Object.assign(S, d); S.ready = true; } })();
-  const persist = () => store.set('data', {reports: S.reports, crew: S.crew, apparatus: S.apparatus, mileage: S.mileage, mileage_archive: S.mileage_archive, requests: S.requests, servicelog: S.servicelog});
+  // notes and narratives are kept encrypted on the device (#49); the plain data file never holds them once a user has signed in
+  const persist = () => {
+    const base = {crew: S.crew, apparatus: S.apparatus, mileage: S.mileage, mileage_archive: S.mileage_archive, requests: S.requests, servicelog: S.servicelog, checks: S.checks, devices: S.devices};
+    const strip = () => { const rs = {}, notes = {}; for (const [id, r] of Object.entries(S.reports)) { if (r.notes || r.narrative) { notes[id] = {n: r.notes || '', x: r.narrative || ''}; const c = Object.assign({}, r); delete c.notes; delete c.narrative; rs[id] = c; } else rs[id] = r; } return {rs, notes}; };
+    if (vaultReady && DEK) { const x = strip(); vault.notes = x.notes; store.set('data', Object.assign({reports: x.rs}, base)); saveVault(); }
+    else if (hasVault()) store.set('data', Object.assign({reports: strip().rs}, base));
+    else store.set('data', Object.assign({reports: S.reports}, base));
+  };
   // Changes for Claude, in the same format the PC app uses. Kept until Claude's reply says it has applied them.
   let outbox = store.get('outbox', []); let dirty = store.get('dirty', false);
   const cfg = Object.assign({client_id: ''}, store.get('cfg', {})); const saveCfg = () => store.set('cfg', cfg);
@@ -375,7 +407,7 @@ body:not(.locked) .gate{display:none}
 
   // ----- Google sign-in (token only, kept on this tablet for up to an hour) -----
   const GMAIL = 'https://www.googleapis.com/auth/gmail.readonly';
-  const SCOPES = () => 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file' + (cfg.bryx_watch ? ' ' + GMAIL : '');
+  const SCOPES = () => 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file' + (cfg.bryx_watch ? ' ' + GMAIL : '') + (cfg.cal_on ? ' https://www.googleapis.com/auth/calendar.events' : '');
   const hasGmail = () => !!(tok && String(tok.scope || '').includes(GMAIL));
   let tok = store.get('tok', null);
   const clientId = () => (cfg.client_id || (window.ST93_CONFIG && window.ST93_CONFIG.clientId) || '').trim();
@@ -496,7 +528,7 @@ body:not(.locked) .gate{display:none}
   // ----- ONE shared data file on Drive (sync/station93-data.json): every device (tablet, phone, PC) merges it itself -----
   // Newest record wins (reports by _mod; crew/apparatus by status/assignment time; mileage by page then rows);
   // exact ties are broken the same way on every device so they always agree. Claude only reads it and answers with replies.
-  const SHARED = 'station93-data.json', COLLS = ['reports', 'crew', 'apparatus', 'mileage', 'mileage_archive', 'requests', 'servicelog'];
+  const SHARED = 'station93-data.json', COLLS = ['reports', 'crew', 'apparatus', 'mileage', 'mileage_archive', 'requests', 'servicelog', 'checks', 'devices'];
   const DEV = (() => { let d = store.get('device', ''); if (!d) { d = 'd' + Math.random().toString(36).slice(2, 10); store.set('device', d); } return d; })();
   const stable = (v) => JSON.stringify(v, (k, x) => x && typeof x === 'object' && !Array.isArray(x) ? Object.keys(x).sort().reduce((o, kk) => { o[kk] = x[kk]; return o; }, {}) : x);
   const maxs = (...a) => a.filter(Boolean).sort().pop() || '';
@@ -514,6 +546,7 @@ body:not(.locked) .gate{display:none}
       const inc = asMap(j[c], (r) => c === 'mileage' ? (r.vehicle || r.id) : r.id); const map = S[c] || (S[c] = {});
       for (const [id, r] of Object.entries(inc)) {
         if (!r || (c === 'reports' && r.test)) continue;
+        if (c === 'devices') { const cur = map[id]; const ab = !cur || String(r.last_seen || '') > String(cur.last_seen || '') || (String(r.last_seen || '') === String(cur.last_seen || '') && stable(r) > stable(cur)); const m = ab ? Object.assign({}, cur || {}, r) : Object.assign({}, r, cur); if (r.revoked || (cur && cur.revoked)) { m.revoked = true; m.revoked_at = maxs(r.revoked_at, cur && cur.revoked_at); m.revoked_by = (ab ? r.revoked_by : cur && cur.revoked_by) || r.revoked_by || (cur && cur.revoked_by) || ''; } if (stable(m) !== stable(cur || {})) { map[id] = m; n++; } continue; }
         const cur = map[id]; if (!takeIn(c, cur, r)) continue;
         if (c === 'reports' && !cur) pop('call', `New call ${r.num || id}`, [r.type, r.area].filter(Boolean).join(' · '), id);
         else if (c === 'reports' && r.stage && r.stage !== cur.stage) pop(r.stage === 'Ready to Complete' ? 'approval' : 'other', `${r.num || id}: ${r.stage}`, r.needs || '', id);
@@ -535,9 +568,11 @@ body:not(.locked) .gate{display:none}
     if (!f) { f = (await find(`name='${SHARED}' and '${cfg.syncId}' in parents`))[0] || null; if (f) cfg.sharedId = f.id; }
     const pull = async (mod) => { const j = await getJSON(cfg.sharedId); got += mergeShared(j); cfg.shared_mod = mod; cfg.shared_sig = sigOf(j); cfg.shared_by = j.device_name || j.updated_by || ''; cfg.shared_at = j.updated_at || mod; persist(); };
     if (f && f.modifiedTime !== cfg.shared_mod) await pull(f.modifiedTime);
+    if (S.devices[DEV] && S.devices[DEV].revoked) wipeDevice(S.devices[DEV].revoked_by);
+    { const d0 = S.devices[DEV]; const nm = cfg.device_name || ''; const un = (me() || {}).username || ''; if (!d0 || d0.name !== nm || d0.user !== un || Date.now() - Date.parse(d0.last_seen || 0) > 6 * 3600000) S.devices[DEV] = Object.assign({}, d0 || {}, {id: DEV, name: nm, user: un, last_seen: nowISO(), created_at: (d0 && d0.created_at) || nowISO()}); }
     let mine = sharedPayload();
     if (sigOf(mine) !== cfg.shared_sig) {
-      if (cfg.sharedId) { const m = await (await gd(`${API}/files/${cfg.sharedId}?fields=modifiedTime`)).json(); if (m.modifiedTime !== cfg.shared_mod) { await pull(m.modifiedTime); mine = sharedPayload(); } }   // another device saved a moment ago
+      if (cfg.sharedId) { const m = await (await gd(`${API}/files/${cfg.sharedId}?fields=modifiedTime`)).json(); if (m.modifiedTime !== cfg.shared_mod) { await pull(m.modifiedTime); if (S.devices[DEV] && S.devices[DEV].revoked) wipeDevice(S.devices[DEV].revoked_by); mine = sharedPayload(); } }   // another device saved a moment ago
       if (sigOf(mine) !== cfg.shared_sig) {
         const body = JSON.stringify(mine);
         if (cfg.sharedId) { const r = await (await gd(`${UP}/files/${cfg.sharedId}?uploadType=media&fields=id,modifiedTime`, {method: 'PATCH', headers: {'Content-Type': 'application/json'}, body})).json(); cfg.shared_mod = r.modifiedTime; }
@@ -557,7 +592,7 @@ body:not(.locked) .gate{display:none}
       if (r.stage !== 'Completed') continue;
       if (!r.completed_at) { r.completed_at = nowISO(); continue; }
       if (now - Date.parse(r.completed_at) < lim) continue;
-      try { localStorage.removeItem('st93t.as.' + r.cad); } catch (e) { /* blocked */ }
+      try { localStorage.removeItem('st93t.as.' + r.cad); } catch (e) { /* blocked */ } if (vault.sheets && vault.sheets[r.cad]) { delete vault.sheets[r.cad]; saveVault(); }
       if (!String(r.notes || '').trim() && !String(r.narrative || '').trim()) continue;
       r.notes = ''; r.narrative = ''; r.retention_cleared_at = nowISO(); r._mod = nowISO(); r._by = 'cleanup';
       r.history = (r.history || []).concat([{at: nowISO(), by: 'Cleanup', items: [`notes and narrative cleared ${KEEP_DAYS} days after Completed - FireWorks keeps the report`]}]).slice(-40); n++;
@@ -571,6 +606,7 @@ body:not(.locked) .gate{display:none}
   function schedulePush() { clearTimeout(pushTimer); pushTimer = setTimeout(() => syncNow(false), 15000); }
   async function syncNow(manual) {
     if (syncing) return;
+    if (hasVault() && !vaultReady) { setNet('bad', 'Sign in to sync'); return; }   // never sync until the locked notes are open, so nothing is dropped
     if (!navigator.onLine) { setNet(outbox.length ? 'warn' : 'bad', 'Offline - changes are saved on this tablet'); return; }
     if (!tokenOk()) { if (manual) { if (!(await signIn())) { setNet('tap', 'Google sign-in needed'); return; } } else { setNet(cfg.connected ? 'tap' : 'bad', cfg.connected ? 'Tap to sync' : 'Connect Google Drive in Settings'); return; } }
     syncing = true; setNet('sync'); let got = 0;
@@ -582,13 +618,13 @@ body:not(.locked) .gate{display:none}
       const rs = (await find(`'${cfg.fromId}' in parents and name contains 'from-claude-'`, 'name desc')).slice(0, 5).reverse();
       for (const f of rs) { if (cfg.claude_seen && f.name <= cfg.claude_seen) continue; const j = await getJSON(f.id); got += applyClaude(j); cfg.claude_seen = f.name; cfg.claude_at = j.generated_at || f.modifiedTime; }
       if (manual) cfg.sync_requested_at = nowISO();
-      retention(); got += await syncShared();
+      retention(); got += await syncShared(); calSync(false);
       S.ready = true; persist(); refreshMe(); await flushPops(); offerRespond(); if (!cfg.notify_armed) { cfg.notify_armed = true; saveCfg(); }
       cfg.last_sync = nowISO(); cfg.last_err = ''; saveCfg(); setNet(outbox.length ? 'ok' : 'ok');
       if (manual) toast(got ? `Synced - ${got} update${got > 1 ? 's' : ''} received` : 'Synced - nothing new');
     } catch (e) {
       cfg.last_err = e.message; saveCfg(); setNet(e.code === 'auth' ? 'tap' : 'bad', e.code === 'auth' ? 'Tap to sync' : 'Sync problem - see Settings'); if (manual) toast('Sync problem: ' + e.message);
-    } finally { syncing = false; if (!$('#sheetHost').children.length && !document.querySelector('.sheet') && view !== 'settings') render(); else if (view === 'settings') renderSettings(); }
+    } finally { syncing = false; if (window.__st93wiped) return; if (!$('#sheetHost').children.length && !document.querySelector('.sheet') && view !== 'settings') render(); else if (view === 'settings') renderSettings(); }
   }
   // ----- Bryx dispatch watch: reads Bryx dispatch emails from Gmail while the app is open -----
   // Keeps time, CAD ID, call type, street, units, box and coordinates. The dispatch narrative is never kept.
@@ -684,9 +720,313 @@ body:not(.locked) .gate{display:none}
   $('#net').addEventListener('click', () => syncNow(true));
   $('#net').setAttribute('role', 'button'); $('#net').setAttribute('tabindex', '0');
 
+  // =====================================================================================================
+  // v2.1 - security (#49 locked notes, #50 lost device, #51 change log, #52 roles), call flow (#34, #46, #8, #21),
+  // dashboards (#33, #35, #37, #39, #41), equipment (#5 apparatus checks, #48 calendar link)
+  // =====================================================================================================
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const isoDay = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  const isoToday = () => isoDay(new Date());
+  const b64big = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+  const unb64big = (x) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
+
+  // ----- #49 locked notes: one random data key, wrapped by each user's password; the raw key lives only in this tab's session -----
+  let vaultSeq = 0;
+  async function saveVault() {
+    if (!DEK) return; const my = ++vaultSeq; const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({name: 'AES-GCM', iv}, DEK, new TextEncoder().encode(JSON.stringify(vault))));
+    if (my !== vaultSeq) return;
+    if (window.__st93wiped) return; try { localStorage.setItem('st93t.secret', JSON.stringify({v: 1, iv: b64big(iv), ct: b64big(ct)})); } catch (e) { toast('Could not save locked notes - storage is full'); }
+  }
+  async function openVault() {
+    if (!DEK) return false;
+    let raw = null; try { raw = localStorage.getItem('st93t.secret'); } catch (e) { /* blocked */ }
+    if (raw) { try { const o = JSON.parse(raw); const pt = await crypto.subtle.decrypt({name: 'AES-GCM', iv: unb64big(o.iv)}, DEK, unb64big(o.ct)); vault = Object.assign({notes: {}, sheets: {}, addr: {}}, JSON.parse(new TextDecoder().decode(pt))); } catch (e) { DEK = null; return false; } }
+    for (const [id, x] of Object.entries(vault.notes || {})) { const r = S.reports[id]; if (r) { if (!r.notes && x.n) r.notes = x.n; if (!r.narrative && x.x) r.narrative = x.x; } }
+    try { const ks = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('st93t.as.')) ks.push(k); } for (const k of ks) { const cad = k.slice(9); if (!vault.sheets[cad]) vault.sheets[cad] = JSON.parse(localStorage.getItem(k)); localStorage.removeItem(k); } } catch (e) { /* blocked */ }
+    vaultReady = true; persist(); return true;
+  }
+  const WITER = 150000;
+  async function kekFor(name, pw, salt) { const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(norm(name) + '\nvault\n' + pw), 'PBKDF2', false, ['deriveKey']); return crypto.subtle.deriveKey({name: 'PBKDF2', salt, iterations: WITER, hash: 'SHA-256'}, key, {name: 'AES-GCM', length: 256}, false, ['encrypt', 'decrypt']); }
+  async function wrapFor(u, pw, raw) { const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)); const k = await kekFor(u.username, pw, salt); u.wrap = {salt: b64big(salt), iv: b64big(iv), ct: b64big(new Uint8Array(await crypto.subtle.encrypt({name: 'AES-GCM', iv}, k, raw)))}; }
+  async function unwrapFor(u, pw) { if (!u || !u.wrap) return null; try { const k = await kekFor(u.username, pw, unb64big(u.wrap.salt)); return new Uint8Array(await crypto.subtle.decrypt({name: 'AES-GCM', iv: unb64big(u.wrap.iv)}, k, unb64big(u.wrap.ct))); } catch (e) { return null; } }
+  const sessRaw = () => { const r = sess.get('dek'); try { return r ? unb64big(r) : null; } catch (e) { return null; } };
+  async function useRaw(raw) { DEK = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']); sess.set('dek', b64big(raw)); }
+  async function keysAfterLogin(u, pw) {
+    let raw = await unwrapFor(u, pw);
+    if (!raw) {
+      if ((udb.users || []).some((x) => x !== u && x.wrap) && hasVault()) { toast('The locked notes on this device belong to another user - ask them to sign in once'); return false; }
+      raw = crypto.getRandomValues(new Uint8Array(32)); await wrapFor(u, pw, raw); saveUsers();
+    }
+    await useRaw(raw); const ok = await openVault();
+    if (!ok) toast('Could not open the locked notes with this sign-in'); else setTimeout(() => syncNow(false), 300);
+    return ok;
+  }
+  async function keysFromSession() { const raw = sessRaw(); if (!raw) return false; try { await useRaw(raw); const ok = await openVault(); if (ok) setTimeout(() => syncNow(false), 300); return ok; } catch (e) { return false; } }
+  function dropKeys() { sess.set('dek', null); DEK = null; vaultReady = false; vault = {notes: {}, sheets: {}, addr: {}}; if (hasVault()) for (const r of Object.values(S.reports)) { delete r.notes; delete r.narrative; } }
+
+  // ----- #52 roles (labels on this device's users; they guide the screens, they are not a hard lock) -----
+  const ROLES = {member: 'Member', officer: 'Officer', chief: 'Chief'};
+  const roleOf = (u) => (u && u.role) || 'officer';
+  const isOfficer = () => roleOf(me()) !== 'member';
+
+  // ----- #50 lost device switch -----
+  function wipeDevice(by) {
+    window.__st93wiped = true;
+    try { const ks = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('st93t.')) ks.push(k); } ks.forEach((k) => localStorage.removeItem(k)); sessionStorage.clear(); } catch (e) { /* blocked */ }
+    document.body.className = ''; document.body.replaceChildren(el('div', {class: 'lock'}, el('h2', {text: 'This device was signed out'}), el('p', {class: 'note', style: 'max-width:520px;text-align:center', text: `${by ? by + ' signed this device out from another device' : 'This device was signed out from another device'}. All Station 93 data on it - calls, locked notes, assessment sheets and sign-ins - has been cleared.`}), el('button', {type: 'button', class: 'btn primary', text: 'Set up again', onclick: () => location.reload()})));
+    throw Object.assign(new Error('This device was signed out'), {code: 'wiped'});
+  }
+  function devicesSection() {
+    const list = Object.values(S.devices || {}).sort((a, b) => String(b.last_seen).localeCompare(String(a.last_seen)));
+    return el('div', {class: 'sec'}, el('h3', {text: 'Devices'}),
+      el('p', {class: 'note', text: 'Every device that has synced Station 93. If a tablet or phone is lost, sign it out here: the next time it connects it clears all its Station 93 data, including locked notes. Also remove its Google access at myaccount.google.com > Security > Your connections to third-party apps.'}),
+      list.length ? el('ul', {class: 'userlist'}, list.map((d) => el('li', {}, el('span', {class: 'grow', text: `${d.name || 'Unnamed device'}${d.id === DEV ? ' · this device' : ''}${d.user ? ' · ' + d.user : ''} · last seen ${fmtWhen(d.last_seen)}${d.revoked ? ' · SIGNED OUT ' + fmtWhen(d.revoked_at) : ''}`}),
+        d.id === DEV || d.revoked || !isOfficer() ? null : el('button', {type: 'button', class: 'btn ghost', text: 'Sign out & wipe', onclick: () => confirmBox(`Sign out ${d.name || 'that device'}?`, 'The next time it connects it clears all its Station 93 data (calls, locked notes, assessment sheets, sign-ins). It would need to be set up again.', 'Sign out & wipe', () => { S.devices[d.id] = Object.assign({}, d, {revoked: true, revoked_at: nowISO(), revoked_by: (me() || {}).username || cfg.device_name || 'another device'}); persist(); markDirty(); syncNow(false); renderSettings(); toast('It will be wiped the next time it connects'); })})))) : el('p', {class: 'note', text: 'Devices appear here after their next sync.'}));
+  }
+
+  // ----- #51 app-wide change log -----
+  function logSection() {
+    const qq = el('input', {type: 'search', placeholder: 'Search (call #, person, unit, word)', 'aria-label': 'Search the change log'});
+    const ul = el('ul', {class: 'hist', style: 'max-height:420px;overflow:auto'});
+    const all = () => { const out = [];
+      for (const r of Object.values(S.reports)) { if (r.test) continue; for (const h of r.history || []) out.push({at: h.at, who: h.by, what: `Call ${r.num || r.id}: ${(h.items || []).join(' · ')}`}); }
+      for (const s2 of Object.values(S.servicelog || {})) out.push({at: s2.at, who: s2.by || '', what: `${s2.name || s2.key}: ${s2.status}`});
+      for (const c of Object.values(S.checks || {})) out.push({at: c.at, who: c.by || '', what: `${c.unit} check: ${checkSummary(c)}`});
+      for (const q2 of Object.values(S.requests || {})) out.push({at: q2.updated_at || q2.at, who: q2.from || '', what: `${q2.label || q2.action}${q2.report ? ' for call ' + q2.report : ''}: ${q2.status}`});
+      for (const d of Object.values(S.devices || {})) if (d.revoked) out.push({at: d.revoked_at, who: d.revoked_by || '', what: `Signed out device ${d.name || d.id}`});
+      return out.filter((x) => x.at).sort((a, b) => String(b.at).localeCompare(String(a.at))); };
+    const draw = () => { const t = qq.value.trim().toLowerCase(); const rows = all().filter((x) => !t || (x.who + ' ' + x.what).toLowerCase().includes(t)).slice(0, 300); ul.replaceChildren(...(rows.length ? rows.map((x) => el('li', {}, el('b', {text: `${fmtWhen(x.at)} · ${x.who || '—'}: `}), x.what)) : [el('li', {text: 'Nothing found.'})])); };
+    qq.addEventListener('input', draw); draw();
+    return el('details', {class: 'sec'}, el('summary', {}, el('b', {text: 'Change log - every call, crew change, apparatus check and request'})), qq, ul, el('p', {class: 'note', text: 'Built from each call\'s history, service changes, apparatus checks and Claude requests. It is part of every backup.'}));
+  }
+
+  // ----- #34 progress steps -----
+  function stepsOf(r) { const st = r.stage || ''; const later = (s) => STAGES.indexOf(st) >= STAGES.indexOf(s) && st !== 'Blocked' && st !== "Other's report";
+    return [['Crew', (r.unitcrew || []).some((u) => (u.members || []).length) || !!String(r.crew || '').replace(/\(no crew\)/g, '').replace(/[A-Z0-9]+:\s*/g, '').trim()], ['Notes', !!String(r.notes || '').trim() || !!r.retention_cleared_at || st === 'Completed'], ['Narrative', !!String(r.narrative || '').trim() || !!r.retention_cleared_at || st === 'Completed'],
+      ['Draft', !!(r.draft_id || r.email_sent) || later('Draft staged')], ['Approved', later('Ready to Complete')], ['Completed', st === 'Completed']]; }
+  function stepsBar(r, big) { const s = stepsOf(r); const n = s.filter((x) => x[1]).length;
+    return el('div', {class: 'steps' + (big ? ' big' : ''), role: 'img', 'aria-label': `${n} of 6 steps done: ` + s.map(([k, ok]) => `${k} ${ok ? 'done' : 'to do'}`).join(', '), title: s.map(([k, ok]) => (ok ? '✓ ' : '○ ') + k).join('\n')}, s.map(([k, ok]) => big ? el('span', {class: ok ? 'on' : ''}, el('i'), k) : el('i', {class: ok ? 'on' : ''}))); }
+
+  // ----- #8 repeat addresses + #21 address notes -----
+  const distM = (a, b) => { const R0 = 6371000, rad = Math.PI / 180, dla = (b.la - a.la) * rad, dlo = (b.lo - a.lo) * rad; const x = Math.sin(dla / 2) ** 2 + Math.cos(a.la * rad) * Math.cos(b.la * rad) * Math.sin(dlo / 2) ** 2; return 2 * R0 * Math.asin(Math.sqrt(x)); };
+  function repeatsOf(r, days) { if (!r || !r.la || !r.lo) return []; const lim = Date.now() - (days || 90) * 86400000; return Object.values(S.reports).filter((x) => !x.test && x.id !== r.id && x.la && x.lo && Date.parse(x.date || 0) >= lim && distM(r, x) <= 40); }
+  function addrNoteFor(la, lo) { if (!la || !lo) return null; let best = null; for (const [k, a] of Object.entries(vault.addr || {})) { const d = distM({la, lo}, a); if (d <= 40 && (!best || d < best.d)) best = {k, d, a}; } return best; }
+  function addrSection(r, f) {
+    const box = el('div', {class: 'sec'});
+    const draw = () => {
+      const la = Number(f.la.value) || r.la, lo = Number(f.lo.value) || r.lo; const hit = addrNoteFor(la, lo);
+      if (!DEK) { box.replaceChildren(el('h3', {text: 'Address notes'}), el('p', {class: 'note', text: 'Sign in with your password to use locked address notes.'})); return; }
+      if (!la || !lo) { box.replaceChildren(el('h3', {text: 'Address notes'}), el('p', {class: 'note', text: 'Add coordinates to keep notes for this address.'})); return; }
+      const ta = el('textarea', {rows: '2', placeholder: 'Gate code, Knox box, dogs, oxygen in use, resident who often needs a lift assist…'}); ta.value = hit ? hit.a.text : '';
+      box.replaceChildren(el('h3', {}, 'Address notes', el('span', {class: 'grow'}), el('span', {class: 'note', text: 'Locked on this device only'})), ta,
+        el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn', text: 'Save address note', onclick: () => { const t = ta.value.trim(); const k = hit ? hit.k : 'a' + Date.now(); if (!t) delete vault.addr[k]; else vault.addr[k] = {la, lo, area: f.area.value.trim() || r.area || '', text: t, at: nowISO()}; saveVault(); toast(t ? 'Address note saved (locked on this device)' : 'Address note removed'); draw(); }}), hit ? el('span', {class: 'note', text: `Saved ${fmtWhen(hit.a.at)}`}) : null));
+    };
+    draw(); return box;
+  }
+
+  // ----- #46 report checker (runs inside OK to Complete, after saving) -----
+  const TYPOS = {recieve: 'receive', recieved: 'received', seperate: 'separate', ambulence: 'ambulance', pateint: 'patient', patiant: 'patient', assisstance: 'assistance', occured: 'occurred', arived: 'arrived', responed: 'responded', cancled: 'canceled', untill: 'until', sucessfully: 'successfully', alot: 'a lot', definately: 'definitely', breating: 'breathing', unresponsize: 'unresponsive', AFVD: 'AVFD', AVDF: 'AVFD', transfered: 'transferred', begining: 'beginning'};
+  function reviewReport(n, r) {
+    const out = []; const add = (lvl, t) => out.push({lvl, t}); const txt = `${n.notes}\n${n.narrative}`;
+    if (!n.unitcrew.some((u) => u.members.length)) add('fix', 'No crew on any unit - add who rode.');
+    if (n.unitcrew.some((u) => u.unit === 'AS904' && u.members.length) && !/day/i.test(n.oic)) add('check', 'AS904 is on the call - if it arrived, Day is OIC and Bishop is Member Making.');
+    if (!n.oic.trim()) add('fix', 'OIC is blank.');
+    if (!n.type.trim()) add('fix', 'Dispatch call type is blank.');
+    if (!n.ntypes.length) add('fix', 'Pick a NERIS incident type.');
+    if (!n.loc) add('check', 'Location type is not picked.');
+    if (!n.zone || n.zone === '—') add('fix', 'Zone is blank - enter the coordinates or the zone.');
+    if (!n.area) add('check', 'Street (area) is blank.');
+    const nums = new Set(n.units.split(',').map((x) => (x.match(/\d{3}/) || [])[0]).filter(Boolean));
+    for (const m of new Set((n.narrative.match(/\b[A-Z]{1,3}9\d{2}\b/g) || []))) { const d = m.match(/\d{3}/)[0]; if (!nums.has(d)) add('check', `The narrative names ${m}, but it is not on the call's units.`); }
+    if (/\b(Mr|Mrs|Ms|Miss)\.?\s+[A-Z][a-z]+/.test(txt)) add('fix', 'Looks like a patient name (Mr./Mrs./Ms.) - use "the PT".');
+    if (/\b\d{1,3}\s?(y\/o|yo|yr old|year[- ]old)\b/i.test(txt) || /\bDOB\b/.test(txt)) add('check', 'An age or date of birth is in the notes or narrative.');
+    if (/\b\d{2,3}\/\d{2,3}\b/.test(n.narrative)) add('check', 'The narrative has something that looks like a blood pressure - vitals stay on the assessment sheet.');
+    if (/EOR:/i.test(n.narrative)) add('fix', 'Remove the EOR line - it is added to the email automatically.');
+    for (const [bad, good] of Object.entries(TYPOS)) { const re = new RegExp(`\\b${bad}\\b`, bad === bad.toUpperCase() ? '' : 'i'); if (re.test(txt)) add('check', `Typo: "${bad}" should be "${good}".`); }
+    if (n.date && n.date > isoToday()) add('fix', 'The date is in the future.');
+    return out;
+  }
+
+  // ----- #33 report progress + #41 clean slate -----
+  const myReports = () => Object.values(S.reports).filter((r) => !r.test && r.stage !== "Other's report");
+  function ring(label, done, total, onclick) {
+    const p = total ? done / total : 0; const C = 2 * Math.PI * 42;
+    const b = el('button', {type: 'button', class: 'ring', onclick, 'aria-label': `${label}: ${done} of ${total} reports completed`});
+    b.innerHTML = `<svg viewBox="0 0 100 100" class="ringsvg" aria-hidden="true"><circle cx="50" cy="50" r="42" class="rbg"/><circle cx="50" cy="50" r="42" class="rfg" style="stroke-dasharray:${C.toFixed(1)};stroke-dashoffset:${C.toFixed(1)}" data-off="${(C * (1 - p)).toFixed(1)}"/></svg>`;
+    b.append(el('b', {text: total ? Math.round(p * 100) + '%' : '—'}), el('span', {text: label}), el('small', {text: `${done} of ${total} done`}));
+    requestAnimationFrame(() => requestAnimationFrame(() => { const c = b.querySelector('.rfg'); if (c) c.style.strokeDashoffset = c.dataset.off; }));
+    return b;
+  }
+  function progressSection(tv) {
+    const R = myReports(); const now = new Date(); const wk = new Date(now.getFullYear(), now.getMonth(), now.getDate()); wk.setDate(wk.getDate() - ((wk.getDay() + 6) % 7));
+    const per = (from) => { const xs = R.filter((r) => (r.date || '') >= from); return [xs.filter((r) => r.stage === 'Completed').length, xs.length]; };
+    const go = (f2) => () => { if (tv) return; filter = f2; store.set('filter', f2); show('calls'); };
+    const open = R.filter((r) => OPEN.includes(r.stage)); const max = Math.max(1, ...OPEN.map((s) => open.filter((r) => r.stage === s).length));
+    const oldest = open.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
+    return el('div', {class: 'sec progress'}, el('h3', {text: 'Report progress'}),
+      el('div', {class: 'rings'}, ring('This week', ...per(isoDay(wk)), go('Completed')), ring('This month', ...per(`${now.getFullYear()}-${pad2(now.getMonth() + 1)}-01`), go('Completed')), ring('This year', ...per(`${now.getFullYear()}-01-01`), go('Completed'))),
+      el('div', {}, OPEN.map((s) => { const n = open.filter((r) => r.stage === s).length; return el('button', {type: 'button', class: 'bar stagebar', onclick: go(s)}, el('span', {class: 'bl', text: s}), el('span', {class: 'bt'}, el('i', {class: 'c-bg-' + CLS[s], style: `width:${(n / max * 100).toFixed(1)}%`})), el('b', {text: String(n)})); })),
+      oldest ? el('p', {class: 'note' + (ageDays(oldest) >= 7 ? ' warnline' : ''), text: `Oldest open report: ${oldest.num} (${fmtDate(oldest.date)}, ${ageDays(oldest)} days, ${oldest.stage})`}) : el('p', {class: 'note', text: 'No open reports.'}));
+  }
+  function streakChip() {
+    const R = myReports(); const today = isoToday(); const overdue = R.filter((r) => ['Needs info', 'Draft staged'].includes(r.stage) && ageDays(r) >= 7).length;
+    if (overdue || !cfg.streak_since) { if (cfg.streak_since !== today) { cfg.streak_since = today; saveCfg(); } }
+    const days = overdue ? 0 : Math.round((Date.parse(today) - Date.parse(cfg.streak_since)) / 86400000);
+    const openN = R.filter((r) => OPEN.includes(r.stage)).length;
+    if (cfg.prev_open > 0 && openN === 0 && cfg.cheer_day !== today) { cfg.cheer_day = today; setTimeout(cheer, 250); }
+    if (cfg.prev_open !== openN) { cfg.prev_open = openN; saveCfg(); }
+    return el('div', {class: 'streak' + (overdue ? ' paused' : '')}, overdue ? `${overdue} report${overdue > 1 ? 's are' : ' is'} 7+ days old - clean streak paused` : `Clean streak: ${days} day${days === 1 ? '' : 's'} with no report 7+ days old`, openN === 0 ? ' · Clean slate - every report is done' : '');
+  }
+  function cheer() {
+    toast('Clean slate - every report is done!'); if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const box = el('div', {class: 'confetti', 'aria-hidden': 'true'}); const cs = ['#b3261e', '#1f7a4a', '#2d66b0', '#e3a23f', '#ffffff'];
+    for (let i = 0; i < 60; i++) box.append(el('i', {style: `left:${(Math.random() * 100).toFixed(1)}%;background:${cs[i % 5]};animation-delay:${(Math.random() * 0.6).toFixed(2)}s;animation-duration:${(2 + Math.random() * 1.5).toFixed(2)}s`}));
+    document.body.append(box); setTimeout(() => box.remove(), 4300);
+  }
+
+  // ----- #35 live status backdrop -----
+  function updateBackdrop() {
+    const b = document.body; const on = store.get('backdrop', true) !== false;
+    const act = on && !!S.reports[store.get('resp', '')]; const overdue = on && myReports().some((r) => ['Needs info', 'Draft staged'].includes(r.stage) && ageDays(r) >= 7); const h = new Date().getHours();
+    b.classList.toggle('bd-call', act); b.classList.toggle('bd-overdue', !act && overdue); b.classList.toggle('bd-night', on && (h >= 22 || h < 6));
+  }
+  setInterval(updateBackdrop, 60000);
+
+  // ----- #39 response timeline -----
+  function dispatchAt(r) { if (!r.date || !/^\d\d:\d\d/.test(r.time || '')) return null; const d = new Date(`${r.date}T${r.time.slice(0, 5)}:00`); return isNaN(d) ? null : d; }
+  const minsBetween = (a, b) => a && b ? Math.round((new Date(b) - new Date(a)) / 60000) : null;
+  function timelineSec(r) {
+    const resp = r.resp || {}; if (!Object.keys(resp).length) return null;
+    const d0 = dispatchAt(r);
+    const pts = [['Dispatched', d0], ['En route', resp.enroute], ['On scene', resp.onscene], ['PT contact', resp.ptcontact], ['Clear', resp.cleared]].map(([k, t]) => [k, t ? new Date(t) : null]).filter(([, t]) => t && !isNaN(t)).sort((a, b) => a[1] - b[1]);
+    const box = el('div', {class: 'sec'}, el('h3', {text: 'Response timeline'}));
+    if (pts.length < 2) { box.append(el('p', {class: 'note', text: 'Times appear here as they are stamped in response mode.'})); return box; }
+    const t0 = pts[0][1].getTime(); const goal = d0 ? d0.getTime() + 14 * 60000 : null; const t1 = Math.max(...pts.map(([, t]) => t.getTime()), goal || 0, t0 + 10 * 60000);
+    const X = (t) => (30 + (t - t0) / (t1 - t0) * 540).toFixed(1);
+    let s = `<svg viewBox="0 0 600 120" class="tl" role="img" aria-label="Response timeline"><line x1="30" y1="62" x2="570" y2="62" class="tlbase"/><line x1="30" y1="62" x2="${X(pts[pts.length - 1][1].getTime())}" y2="62" class="tlrun"/>`;
+    if (goal) s += `<line x1="${X(goal)}" y1="24" x2="${X(goal)}" y2="100" class="tlgoal"/><text x="${X(goal)}" y="16" text-anchor="middle" class="tlgt">14 min (NFPA 1720 rural)</text>`;
+    pts.forEach(([k, t], i) => { const x = X(t.getTime()); const up = i % 2 === 0; s += `<circle cx="${x}" cy="62" r="6" class="tldot" style="animation-delay:${(i * 0.25).toFixed(2)}s"/><text x="${x}" y="${up ? 46 : 88}" text-anchor="middle" class="tlt">${k}</text><text x="${x}" y="${up ? 33 : 102}" text-anchor="middle" class="tlh">${hhmm(t.toISOString())}</text>`; });
+    const w = el('div', {class: 'tlwrap'}); w.innerHTML = s + '</svg>';
+    const m = (a, b) => { const v2 = minsBetween(a, b); return v2 == null ? '—' : v2 + ' min'; };
+    box.append(w, el('div', {class: 'row'}, [['Turnout', m(d0, resp.enroute)], ['Travel', m(resp.enroute, resp.onscene)], ['Response', m(d0, resp.onscene)], ['On scene', m(resp.onscene, resp.cleared)]].map(([k, v2]) => el('span', {class: 'pill', text: `${k} ${v2}`}))));
+    return box;
+  }
+
+  // ----- #37 station TV mode -----
+  let tvTimer = null, tvWx = null, tvWxAt = 0;
+  async function tvWeather() {
+    if (tvWx && Date.now() - tvWxAt < 30 * 60000) return tvWx;
+    try { const p = await (await fetch('https://api.weather.gov/points/30.7600,-86.1150')).json(); const fc = await (await fetch(p.properties.forecast)).json(); tvWx = (fc.properties.periods || []).slice(0, 3); tvWxAt = Date.now(); } catch (e) { /* offline */ }
+    return tvWx;
+  }
+  function activeCall() {
+    const r0 = S.reports[store.get('resp', '')]; if (r0) return r0;
+    return Object.values(S.reports).filter((r) => !r.test && !r.cleared_at && dispatchAt(r) && Date.now() - dispatchAt(r).getTime() < 60 * 60000 && Date.now() >= dispatchAt(r).getTime() - 60000).sort((a, b) => dispatchAt(b) - dispatchAt(a))[0] || null;
+  }
+  function openTV() {
+    $('#tvHost') && $('#tvHost').remove(); clearInterval(tvTimer);
+    const host = el('div', {class: 'tv', id: 'tvHost', role: 'dialog', 'aria-label': 'Station TV'}); document.body.append(host); keepAwake(true);
+    try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); } catch (e) { /* not allowed */ }
+    const close = () => { clearInterval(tvTimer); tvTimer = null; host.remove(); document.removeEventListener('keydown', esc); if (!store.get('resp', '')) keepAwake(false); try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* ignore */ } };
+    const esc = (e) => { if (e.key === 'Escape') close(); }; document.addEventListener('keydown', esc);
+    async function draw() {
+      lastAct = Date.now(); const now = new Date(); const wx = await tvWeather(); if (!document.body.contains(host)) return;
+      const ac = activeCall(); const ap = Object.values(S.apparatus).filter((a) => a.unit).sort((a, b) => a.unit.localeCompare(b.unit));
+      const crewOn = (u) => Object.values(S.crew).filter((c) => units(c.assigned).includes(u)).map((c) => lastName(c.name));
+      const open = myReports().filter((r) => OPEN.includes(r.stage)).sort((a, b) => (b.num || 0) - (a.num || 0)).slice(0, 8);
+      host.replaceChildren(...[
+        el('div', {class: 'tvtop'}, el('h1', {text: 'STATION 93 · ARGYLE FIRE'}), el('span', {class: 'clock', text: `${pad2(now.getHours())}:${pad2(now.getMinutes())}`}), el('span', {class: 'tvdate', text: now.toLocaleDateString([], {weekday: 'long', month: 'short', day: 'numeric'})})),
+        ac ? el('div', {class: 'tvcall'}, `CALL ${ac.num || ''} · ${ac.type || 'Call'}`, el('small', {text: [ac.area, ac.zone && ac.zone !== '—' ? ac.zone : '', ac.units, dispatchAt(ac) ? `dispatched ${hhmm(dispatchAt(ac).toISOString())} (${Math.max(0, Math.round((Date.now() - dispatchAt(ac)) / 60000))} min ago)` : ''].filter(Boolean).join(' · ')})) : null,
+        el('div', {class: 'tvgrid'},
+          el('div', {class: 'tvbox'}, el('h2', {text: 'Apparatus'}), ap.map((a) => el('div', {class: 'tvrow'}, el('b', {text: a.unit}), el('span', {class: a.status === 'In service' ? 'in' : a.status === 'Out of service' ? 'out' : '', text: a.status || 'Not set'}), el('span', {class: 'grow', text: crewOn(a.unit).join(', ')})))),
+          el('div', {class: 'tvbox'}, el('h2', {text: `Open reports (${myReports().filter((r) => OPEN.includes(r.stage)).length})`}), open.length ? open.map((r) => el('div', {class: 'tvrow'}, el('b', {text: String(r.num)}), el('span', {class: 'grow', text: r.type || 'Call'}), el('span', {text: r.stage}))) : el('div', {class: 'tvrow', text: 'All caught up'}), progressSection(true)),
+          el('div', {class: 'tvbox'}, el('h2', {text: 'Weather'}), wx ? wx.map((p) => el('div', {class: 'tvrow'}, el('b', {text: `${p.temperature}°`}), el('span', {class: 'grow', text: `${p.name}: ${p.shortForecast}`}), el('span', {text: p.windSpeed || ''}))) : el('div', {class: 'tvrow', text: 'Weather unavailable'}), el('p', {class: 'note', text: 'National Weather Service'}))),
+        el('button', {type: 'button', class: 'btn tvexit', text: 'Exit TV mode', onclick: close})].filter(Boolean));
+    }
+    draw(); tvTimer = setInterval(draw, 30000);
+  }
+
+  // ----- #5 apparatus checks + maintenance due by mileage -----
+  const CHECK_ITEMS = ['Fluids (oil, coolant, transmission)', 'Fuel 3/4 or more', 'Lights and siren', 'Tires and body', 'O2 cylinders full', 'AED ready, pads in date', 'SCBA bottles full', 'Tools and equipment in place', 'Radio and charger'];
+  const lastCheck = (unit) => Object.values(S.checks || {}).filter((c) => c.unit === unit).sort((a, b) => String(b.at).localeCompare(String(a.at)))[0];
+  const checkSummary = (c) => { const iss = Object.entries(c.items || {}).filter(([, v2]) => v2 === 'issue').map(([k]) => k); return iss.length ? `${iss.length} issue${iss.length > 1 ? 's' : ''}: ${iss.join(', ')}` : 'all OK'; };
+  function lastReading(unit) { const m = S.mileage[unit]; const rows = (m && m.rows) || []; const last = rows[rows.length - 1]; return last && last.end !== '' ? Number(last.end) : null; }
+  function serviceInfo(a) { if (!a.service_every || a.service_last === '' || a.service_last == null) return null; const cur = lastReading(a.unit); if (cur == null) return null; const left = Number(a.service_last) + Number(a.service_every) - cur; return {left, due: left <= 0, soon: left > 0 && left <= 300}; }
+  function openCheck(a) {
+    const prev = lastCheck(a.unit); const st = {}; const notes = el('textarea', {rows: '2', placeholder: 'Anything to report (low fluid, damage, missing item)'});
+    const rows = CHECK_ITEMS.map((k) => { const ok = el('button', {type: 'button', class: 'opt', text: 'OK'}), bad = el('button', {type: 'button', class: 'opt', text: 'Issue'}); const set = (v2) => { st[k] = v2; ok.classList.toggle('on', v2 === 'ok'); bad.classList.toggle('bad', v2 === 'issue'); }; ok.addEventListener('click', () => set('ok')); bad.addEventListener('click', () => set('issue')); return el('div', {class: 'checkrow'}, el('span', {class: 'grow', text: k}), ok, bad); });
+    modal(el('div', {class: 'box', role: 'dialog', 'aria-label': `${a.unit} check`}, el('h2', {text: `${a.unit} check`}), el('p', {class: 'note', text: prev ? `Last check ${fmtWhen(prev.at)} by ${prev.by || '—'}: ${checkSummary(prev)}` : 'No check recorded yet.'}),
+      el('button', {type: 'button', class: 'btn ghost', text: 'Mark all OK', onclick: () => rows.forEach((r) => r.children[1].click())}), el('div', {class: 'checklist'}, rows), notes,
+      el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn ghost', text: 'Cancel', onclick: closeModal}), el('button', {type: 'button', class: 'btn primary', text: 'Save check', onclick: async () => {
+        const miss = CHECK_ITEMS.filter((k) => !st[k]); if (miss.length) { toast(`Mark ${miss.length} more item${miss.length > 1 ? 's' : ''} OK or Issue`); return; }
+        const id = `${a.unit}-${Date.now()}`; const c = {id, unit: a.unit, at: nowISO(), by: ME || (me() || {}).username || '', items: Object.assign({}, st), notes: notes.value.trim(), reading: lastReading(a.unit)};
+        S.checks[id] = c; await put('checks/' + id, c); closeModal(); render(); toast(`${a.unit} check saved - ${checkSummary(c)}`); calSync(false, true);
+      }}))));
+  }
+  function openService(a) {
+    const ev = el('input', {type: 'text', inputmode: 'numeric', value: a.service_every || '', placeholder: '5000'}); const last = el('input', {type: 'text', inputmode: 'decimal', value: a.service_last == null ? '' : a.service_last, placeholder: String(lastReading(a.unit) ?? '')});
+    modal(el('div', {class: 'box', role: 'dialog', 'aria-label': `${a.unit} service`}, el('h2', {text: `${a.unit} service`}), el('div', {class: 'grid'}, el('label', {class: 'span2'}, 'Service every (miles)', ev), el('label', {class: 'span2'}, 'Last service at (reading)', last)), el('p', {class: 'note', text: `Current reading ${lastReading(a.unit) ?? '—'}. Leave both blank to stop tracking.`}),
+      el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn ghost', text: 'Cancel', onclick: closeModal}), el('button', {type: 'button', class: 'btn primary', text: 'Save', onclick: async () => { const fx = {service_every: ev.value.trim() ? Number(ev.value) : '', service_last: last.value.trim() ? Number(last.value) : '', _mod: nowISO()}; Object.assign(a, fx); await put('apparatus/' + a.id, fx, true); closeModal(); render(); calSync(false, true); }}))));
+  }
+  function apparatusExtras(a) {
+    const lc = lastCheck(a.unit); const due = !lc || Date.now() - Date.parse(lc.at) > 7 * 86400000; const sv = serviceInfo(a);
+    return [el('div', {class: 'note' + (lc && checkSummary(lc) !== 'all OK' ? ' warnline' : '')}, lc ? `Checked ${fmtWhen(lc.at)}${lc.by ? ' by ' + lastName(lc.by) : ''} · ${checkSummary(lc)}` : 'Never checked', due ? el('b', {class: 'c-blocked', text: ' · check due'}) : null),
+      sv ? el('div', {class: 'note ' + (sv.due ? 'c-blocked' : sv.soon ? 'warnline' : '')}, sv.due ? `Service overdue by ${Math.abs(sv.left).toFixed(0)} mi` : `Service in ${sv.left.toFixed(0)} mi`) : null,
+      el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn', text: 'Check', onclick: () => openCheck(a)}), el('button', {type: 'button', class: 'btn ghost', text: 'Service', onclick: () => openService(a)}))];
+  }
+
+  // ----- #48 Google Calendar link: weekly check due + service due events -----
+  const CALSCOPE = 'https://www.googleapis.com/auth/calendar.events';
+  const hasCal = () => !!(tok && String(tok.scope || '').includes(CALSCOPE));
+  let calBusy = false;
+  async function calSync(manual, now) {
+    if (!cfg.cal_on || calBusy || !navigator.onLine) return;
+    if (!manual && !now && cfg.cal_at && Date.now() - Date.parse(cfg.cal_at) < 6 * 3600000) return;
+    if (!tokenOk() || !hasCal()) { if (!manual) return; if (!(await signIn()) || !hasCal()) { cfg.cal_err = 'Calendar permission was not given'; saveCfg(); renderSettings(); return; } }
+    calBusy = true; const CAPI = 'https://www.googleapis.com/calendar/v3/calendars/primary/events'; let n = 0;
+    try {
+      const want = {}; const plus = (d, k) => { const x = new Date(d); x.setDate(x.getDate() + k); return x; };
+      for (const a of Object.values(S.apparatus)) {
+        if (!a.unit || (!S.mileage[a.unit] && !lastCheck(a.unit))) continue;
+        const lc = lastCheck(a.unit); let d = lc ? plus(new Date(lc.at), 7) : new Date(); if (d < new Date()) d = new Date();
+        want[`chk-${a.unit}`] = {summary: `Station 93: ${a.unit} weekly check due`, date: isoDay(d), description: lc ? `Last check ${fmtWhen(lc.at)}: ${checkSummary(lc)}` : 'No check recorded yet'};
+        const sv = serviceInfo(a); if (sv && (sv.due || sv.soon)) want[`svc-${a.unit}`] = {summary: `Station 93: ${a.unit} service ${sv.due ? 'overdue' : 'due soon'} (${sv.due ? 'over by ' + Math.abs(sv.left).toFixed(0) : sv.left.toFixed(0) + ' mi left'})`, date: isoDay(plus(new Date(), 1)), description: `Service every ${a.service_every} mi, last at ${a.service_last}`};
+      }
+      cfg.cal = cfg.cal || {};
+      for (const [k, w] of Object.entries(want)) {
+        const body = JSON.stringify({summary: w.summary, description: w.description + '\nFrom the Station 93 app', start: {date: w.date}, end: {date: isoDay(plus(new Date(w.date + 'T12:00:00'), 1))}});
+        let done = false;
+        if (cfg.cal[k]) { try { await gd(`${CAPI}/${cfg.cal[k]}`, {method: 'PATCH', headers: {'Content-Type': 'application/json'}, body}); done = true; } catch (e) { if (e.code !== 404 && e.code !== 410) throw e; } }
+        if (!done) { const r = await (await gd(CAPI, {method: 'POST', headers: {'Content-Type': 'application/json'}, body})).json(); cfg.cal[k] = r.id; }
+        n++;
+      }
+      for (const k of Object.keys(cfg.cal)) if (!want[k]) { try { await gd(`${CAPI}/${cfg.cal[k]}`, {method: 'DELETE'}); } catch (e) { /* already gone */ } delete cfg.cal[k]; }
+      cfg.cal_at = nowISO(); cfg.cal_err = ''; saveCfg(); if (manual) toast(`Calendar updated - ${n} event${n === 1 ? '' : 's'}`);
+    } catch (e) {
+      cfg.cal_err = /accessNotConfigured|has not been used|is disabled/i.test(e.message) ? 'The Google Calendar API is turned off in the Google Cloud project' : e.message; saveCfg(); if (manual) toast('Calendar: ' + cfg.cal_err);
+    } finally { calBusy = false; if (view === 'settings') renderSettings(); }
+  }
+  function calSection() {
+    const on = !!cfg.cal_on, ok = on && hasCal();
+    return el('div', {class: 'sec'}, el('h3', {text: 'Calendar link'}),
+      el('p', {class: 'note', text: 'Puts each apparatus\'s weekly check due date, and a reminder when service is due within 300 miles, on your Google Calendar. Events are updated as checks and mileage come in, never duplicated.'}),
+      el('div', {class: 'row'}, el('span', {class: 'note', style: 'min-width:170px', text: 'Status'}), el('span', {text: !on ? 'Off' : ok ? `On${cfg.cal_at ? ' - updated ' + fmtWhen(cfg.cal_at) : ''}` : 'On - needs Calendar permission (tap Turn on)'})),
+      cfg.cal_err ? el('p', {class: 'note', style: 'color:var(--bad)', text: 'Last problem: ' + cfg.cal_err}) : null,
+      el('div', {class: 'row'}, !ok ? el('button', {type: 'button', class: 'btn primary', text: 'Turn on', onclick: async () => { cfg.cal_on = true; cfg.cal_err = ''; saveCfg(); await calSync(true); renderSettings(); }}) : el('button', {type: 'button', class: 'btn', text: 'Update now', onclick: () => calSync(true)}),
+        on ? el('button', {type: 'button', class: 'btn ghost', text: 'Turn off', onclick: () => { cfg.cal_on = false; saveCfg(); renderSettings(); toast('Calendar link off (existing events stay)'); }}) : null),
+      el('p', {class: 'note', text: 'Google asks once for permission to add events (choose abishop.avfd@gmail.com). If it says the Calendar API is off, turn on Google Calendar API in the Google Cloud project station-93-515521, like the Gmail API.'}));
+  }
+  function tvSection() {
+    const bd = el('input', {type: 'checkbox', checked: store.get('backdrop', true) !== false, style: 'width:22px;height:22px'}); bd.addEventListener('change', () => { store.set('backdrop', bd.checked); updateBackdrop(); });
+    return el('div', {class: 'sec'}, el('h3', {text: 'Station screen'}),
+      el('label', {class: 'row', style: 'gap:10px;min-height:var(--tap)'}, bd, 'Live backdrop - red pulse during a call, amber when reports are 7+ days old, dimmer at night'),
+      el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn primary', text: 'Open Station TV mode', onclick: openTV}), el('span', {class: 'note', text: 'Full-screen board for the station TV: units, open reports, progress and weather. Esc or Exit to leave. Tip: open the app with ?tv=1 to start in TV mode.'})));
+  }
+
   // ---------- views ----------
   function show(v) { view = v; document.querySelectorAll('.tabbtn').forEach((b) => b.classList.toggle('on', b.dataset.view === v)); ['calls', 'mileage', 'crew', 'map', 'stats', 'settings'].forEach((x) => { $('#v-' + x).hidden = x !== v; }); store.set('view', v); render(); }
-  function render() { ({calls: renderCalls, mileage: renderMileage, crew: renderCrew, map: renderMap, stats: renderStats, settings: renderSettings}[view] || renderCalls)(); renderSvc(); }
+  function render() { updateBackdrop(); ({calls: renderCalls, mileage: renderMileage, crew: renderCrew, map: renderMap, stats: renderStats, settings: renderSettings}[view] || renderCalls)(); renderSvc(); }
   document.querySelectorAll('.tabbtn').forEach((b) => b.addEventListener('click', () => show(b.dataset.view)));
 
   // ---------- calls list ----------
@@ -701,7 +1041,7 @@ body:not(.locked) .gate{display:none}
     const search = el('input', {type: 'search', id: 'q', placeholder: 'Search CAD, street, type…', value: q, 'aria-label': 'Search calls'}); search.addEventListener('input', () => { q = search.value; renderList(); });
     const tiles = el('div', {class: 'tiles'}, ['Needs info', 'Awaiting C9', 'Ready to Complete', 'Blocked'].map((s) => { const n = all.filter((r) => r.stage === s).length; return el('button', {type: 'button', class: 'tile' + (s === 'Ready to Complete' && n ? ' hot' : ''), onclick: () => { filter = s; renderCalls(); }}, el('b', {class: 'c-' + CLS[s], text: String(n)}), el('span', {text: s})); }));
     const rb = respondBar(); if (rb) v.append(rb);
-    v.append(el('div', {class: 'row'}, el('div', {style: 'flex:1;min-width:220px'}, search), el('button', {type: 'button', class: 'btn primary', text: '+ New call', onclick: () => openCall(null)})), tiles, chips, el('div', {id: 'bulkHost', style: 'margin-top:12px'}), el('div', {class: 'list', id: 'callList', style: 'margin-top:4px'}));
+    v.append(el('div', {class: 'row'}, el('div', {style: 'flex:1;min-width:220px'}, search), el('button', {type: 'button', class: 'btn primary', text: '+ New call', onclick: () => openCall(null)})), tiles, streakChip(), chips, el('div', {id: 'bulkHost', style: 'margin-top:12px'}), el('div', {class: 'list', id: 'callList', style: 'margin-top:4px'}));
     const nts = store.get('notices', []);
     if (nts.length) v.insertBefore(el('div', {class: 'sec', style: 'margin-bottom:12px'}, el('h3', {}, `From Claude (${nts.length})`, el('span', {class: 'grow'}), el('button', {type: 'button', class: 'link', text: 'Clear', onclick: () => { store.set('notices', []); renderCalls(); }})), el('ul', {class: 'hist'}, nts.slice().reverse().slice(0, 8).map((x) => el('li', {}, el('b', {text: fmtWhen(x.at) + ' '}), x.text)))), v.firstChild);
     renderList();
@@ -722,7 +1062,7 @@ body:not(.locked) .gate{display:none}
       list.append(el('div', {class: 'call b-' + cls, role: 'button', tabindex: '0', onclick: () => openCall(r.id), onkeydown: (e) => { if (e.key === 'Enter') openCall(r.id); }},
         el('label', {class: 'pick', onclick: (e) => e.stopPropagation()}, cb),
         el('div', {class: 'num'}, r.test ? 'TEST' : String(r.num || r.id), el('small', {text: r.test ? (r.cad === 'TESTREPORT' ? '#1' : '#' + r.cad.split('-')[1]) : fmtDate(r.date)})),
-        el('div', {class: 'what'}, el('b', {text: r.type || 'Call'}), el('div', {class: 'meta', text: [r.area, r.zone && r.zone !== '—' ? r.zone : '', r.oic ? 'OIC ' + r.oic : '', nt ? ntLabel(nt) : ''].filter(Boolean).join(' · ')})),
+        el('div', {class: 'what'}, el('b', {text: r.type || 'Call'}), el('div', {class: 'meta'}, [r.area, r.zone && r.zone !== '—' ? r.zone : '', r.oic ? 'OIC ' + r.oic : '', nt ? ntLabel(nt) : ''].filter(Boolean).join(' · '), (() => { const k = r.test ? 0 : repeatsOf(r).length; return k >= 2 ? el('span', {class: 'reppill', text: ` · ↻ ${k + 1} calls here in 90 days`}) : null; })()), r.test || r.stage === "Other's report" ? null : stepsBar(r)),
         el('div', {class: 'right'}, el('span', {class: 'pill c-' + cls, text: r.stage || '—'}), el('div', {class: 'needs'}, r.needs || '', old ? el('span', {class: 'age', text: ` ${ageDays(r)} days`}) : null))));
     }
     renderBulk();
@@ -732,7 +1072,7 @@ body:not(.locked) .gate{display:none}
     const st = el('select', {'aria-label': 'Change stage to'}, el('option', {value: '', text: 'Change stage to…'}), STAGES.map((s) => el('option', {value: s, text: s})));
     const as = el('select', {'aria-label': 'Assign to'}, el('option', {value: '', text: 'Assign to…'}), el('option', {value: '-', text: 'Unassigned'}), Object.values(S.crew).sort((a, b) => a.name.localeCompare(b.name)).map((c) => el('option', {value: c.name, text: c.name})));
     const nd = el('input', {type: 'text', placeholder: 'What it needs (optional)'});
-    h.append(el('div', {class: 'bulk'}, el('b', {text: `${picked.size} selected`}), st, as, nd,
+    h.append(el('div', {class: 'bulk'}, el('b', {text: `${picked.size} selected`}), isOfficer() ? st : null, as, nd,
       el('button', {type: 'button', class: 'btn primary', text: 'Apply', onclick: () => {
         const stage = st.value, who = as.value, needs = nd.value.trim(); if (!stage && !who && !needs) { toast('Pick a stage, a person or type what it needs'); return; }
         const list = [...picked].map((id) => S.reports[id]).filter(Boolean);
@@ -831,6 +1171,8 @@ body:not(.locked) .gate{display:none}
       f.la.addEventListener('change', auto); f.lo.addEventListener('change', auto);
     }
     drawLoc();
+    { const reps = repeatsOf(r); const an = DEK ? addrNoteFor(r.la, r.lo) : null; if (reps.length >= 2 || an) locSec.before(el('div', {class: 'sec addrnote'}, reps.length >= 2 ? el('p', {style: 'margin:0', text: `Repeat address: ${reps.length} other call${reps.length > 1 ? 's' : ''} within 40 m in the last 90 days (${reps.map((x) => x.num).join(', ')}). Consider a fall-prevention or wellness referral.`}) : null, an ? el('p', {style: 'margin:0'}, el('b', {text: 'Address note: '}), an.a.text) : null)); }
+    body.append(addrSection(r, f));
     // Location type
     const area = () => (f.area ? f.area.value : r.area || '').trim();
     body.append(picker({title: 'Location type', note: 'One. Same list as FireWorks.', cats: LT.cats, items: LT.types, multi: false, value: r.loc, label: ltLabel,
@@ -857,7 +1199,7 @@ body:not(.locked) .gate{display:none}
     function drawStatus() {
       const st = el('select', {id: 'f-stage', disabled: !statusOpen}, STAGES.map((s) => el('option', {value: s, text: s, selected: r.stage === s}))); f.stage = st;
       st.addEventListener('change', () => { stSec.className = 'sec status b-' + (CLS[st.value] || 'done'); });
-      stSec.replaceChildren(el('h3', {}, statusOpen ? 'Status (unlocked)' : 'Status (locked)', el('span', {class: 'grow'}), el('button', {type: 'button', class: 'link', text: statusOpen ? 'Lock again' : 'Unlock to change', onclick: () => { r.stage = f.stage.value; r.needs = f.needs.value; statusOpen = !statusOpen; drawStatus(); }})),
+      stSec.replaceChildren(el('h3', {}, statusOpen ? 'Status (unlocked)' : 'Status (locked)', el('span', {class: 'grow'}), isOfficer() ? el('button', {type: 'button', class: 'link', text: statusOpen ? 'Lock again' : 'Unlock to change', onclick: () => { r.stage = f.stage.value; r.needs = f.needs.value; statusOpen = !statusOpen; drawStatus(); }}) : el('span', {class: 'note', text: 'Officers can unlock'})), ...(r.test || r.stage === "Other's report" ? [] : [stepsBar(r, true)]),
         el('div', {class: 'grid'}, el('label', {}, 'Stage', st), el('label', {class: 'span4', style: 'grid-column:span 3'}, 'What it needs', inp('needs', {disabled: !statusOpen}))), el('p', {class: 'note', text: "Set by Claude's reviews, approvals and Clear call. Unlock only to correct it yourself."}));
     }
     drawStatus();
@@ -871,6 +1213,7 @@ body:not(.locked) .gate{display:none}
         const start = `AVFD was dispatched to ${t ? art + t.toLowerCase() : 'a [call type]'}${area() ? ' on ' + area() : ''}. ${us.length ? us.join(', ') : `[unit](#${myNum() || '000'})`} responded and `;
         if (narr.value.trim() && narr.value !== start) { confirmBox('Replace the narrative?', 'The narrative box already has text. Replace it with the starter?', 'Replace', () => { narr.value = start; narr.focus(); }); } else { narr.value = start; narr.focus(); }
       }})), narr));
+    { const tl = timelineSec(r); if (tl) body.append(tl); }
     // Clear call
     const veh = el('select', {'aria-label': 'Unit', style: 'width:auto'}, Object.keys(S.mileage).sort().map((v) => el('option', {value: v, text: v})));
     const pickVeh = unitcrew.map((u) => u.unit).find((u) => S.mileage[u]); if (pickVeh) veh.value = pickVeh;
@@ -956,6 +1299,12 @@ body:not(.locked) .gate{display:none}
         return;
       }
       if (!n.notes.trim() && !n.narrative.trim()) { toast('Add your notes or a narrative first - Claude only writes from what you tell it'); return; }
+      if (!okToComplete.checked) {   // #46: check and save before it goes to the next stage
+        const iss = reviewReport(n, r); save();
+        if (iss.length) { const keep = again; modal(el('div', {class: 'box', role: 'dialog', 'aria-label': 'Report check'}, el('h2', {text: `Report check · ${iss.length} item${iss.length > 1 ? 's' : ''}`}), el('p', {class: 'note', text: 'Saved. Fix these now, or continue if they are fine as they are.'}),
+          el('ul', {class: 'checkout'}, iss.map((x) => el('li', {class: x.lvl}, el('b', {text: x.lvl === 'fix' ? 'Fix: ' : 'Check: '}), x.t))),
+          el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn', text: 'Go back and fix', onclick: closeModal}), el('button', {type: 'button', class: 'btn go', text: 'Continue anyway', onclick: () => { closeModal(); okToComplete.checked = true; okToComplete.force = keep; try { okToComplete(); } finally { okToComplete.checked = false; okToComplete.force = false; } }})))); return; }
+      }
       const hasN = !!n.narrative.trim(), hasNotes = !!n.notes.trim();
       const prov = el('input', {type: 'radio', name: 'okn', id: 'okp', checked: hasN, disabled: !hasN}); const gen = el('input', {type: 'radio', name: 'okn', id: 'okg', checked: !hasN && hasNotes, disabled: !hasNotes});
       const send = el('input', {type: 'checkbox', id: 'oks', style: 'width:22px;height:22px'});
@@ -1017,6 +1366,7 @@ body:not(.locked) .gate{display:none}
         el('div', {class: 'rbody'},
           r.test ? el('p', {class: 'note', style: 'color:var(--warn);font-weight:600;font-size:15px', text: 'Practice run - times and notes stay on this tablet. Clear adds no mileage and does not change your service status.'}) : null,
           el('div', {class: 'rcall'}, el('b', {text: r.type || 'Call'}), el('span', {text: [r.area, r.zone && r.zone !== '—' ? r.zone : '', r.units].filter(Boolean).join(' · ')})),
+          (() => { const an = DEK ? addrNoteFor(r.la, r.lo) : null; const k = repeatsOf(r).length; return an || k >= 2 ? el('div', {class: 'addrnote', style: 'font-size:17px'}, an ? el('div', {}, el('b', {text: 'Address note: '}), an.a.text) : null, k >= 2 ? el('div', {text: `Repeat address - ${k} other calls here in 90 days`}) : null) : null; })(),
           el('div', {class: 'rstamps'}, STAMPS.map(([k, label]) => el('button', {type: 'button', class: 'rstamp' + (k === 'cleared' ? ' clear' : '') + (resp[k] ? ' set' : ''), onclick: () => {
             if (k === 'cleared') { clearFromResponse(); return; }
             if (resp[k]) { confirmBox(`Change ${label}?`, `${label} is set to ${hhmm(resp[k])}. Set it to now instead, or clear it?`, 'Set to now', () => save({resp: Object.assign({}, resp, {[k]: nowISO()})}, `${label} ${hhmm(nowISO())}`)); return; }
@@ -1120,7 +1470,7 @@ body:not(.locked) .gate{display:none}
       const add = el('select', {'aria-label': 'Assign crew to ' + a.unit}, el('option', {value: '', text: '+ Assign crew'}), cr.filter((c) => !on.includes(c)).map((c) => el('option', {value: c.id, text: c.name + (c.number && c.number !== '—' ? ` (#${c.number})` : '')})));
       add.addEventListener('change', () => { const c = S.crew[add.value]; if (c) setAssigned(c, units(c.assigned).concat([a.unit])); });
       return el('div', {class: 'card ' + (a.status === 'In service' ? 'in' : a.status === 'Out of service' ? 'out' : '')}, el('div', {class: 'row'}, el('b', {text: a.unit}), el('span', {class: 'grow'}), el('span', {class: 'note', text: a.status || 'Not set'})),
-        el('div', {class: 'row'}, on.length ? on.map((c) => chip(c.name, `Take ${c.name} off ${a.unit}`, () => setAssigned(c, units(c.assigned).filter((u) => u !== a.unit)))) : el('span', {class: 'note', text: 'No crew assigned'})), add, seg('apparatus', a));
+        el('div', {class: 'row'}, on.length ? on.map((c) => chip(c.name, `Take ${c.name} off ${a.unit}`, () => setAssigned(c, units(c.assigned).filter((u) => u !== a.unit)))) : el('span', {class: 'note', text: 'No crew assigned'})), add, seg('apparatus', a), ...apparatusExtras(a));
     })),
       el('h2', {style: 'font:700 20px var(--display);margin:20px 0 10px', text: 'Crew'}), el('div', {class: 'cards'}, cr.map((c) => {
         const mine = units(c.assigned);
@@ -1151,7 +1501,8 @@ body:not(.locked) .gate{display:none}
   function storageOk() { try { localStorage.setItem('st93t.__t', '1'); localStorage.removeItem('st93t.__t'); return true; } catch (e) { return false; } }
   function openAssessment(cad, rid, dateISO) {
     if (!/^2026-\d{8}$/.test(cad)) { toast('Enter the CAD # first'); return; }
-    const key = 'as.' + cad; const v = store.get(key, null) || {}; const inputs = {};
+    if (!DEK) { toast('Sign in with your password to open assessment sheets (they are locked on this device)'); return; }
+    const v = JSON.parse(JSON.stringify((vault.sheets || {})[cad] || {})); const inputs = {};
     if (!v.date && dateISO) { const [y, m, d] = dateISO.split('-'); v.date = `${m}/${d}/${y}`; }
     const host = el('div', {class: 'wrap'});
     host.append(el('div', {class: 'sec private'}, el('b', {text: 'Kept on this tablet only'}), el('p', {class: 'note', text: storageOk() ? 'Patient details never go to the shared store, the PC, Drive or the dashboard. To have the official PDF filled and emailed, open a chat and send the findings (Copy findings below).' : 'This browser is blocking storage, so the sheet cannot be saved on this tablet. Copy the findings before closing.'})));
@@ -1167,7 +1518,7 @@ body:not(.locked) .gate{display:none}
     }
     inputs.o2_yes.addEventListener('change', () => { if (inputs.o2_yes.checked) inputs.o2_no.checked = false; }); inputs.o2_no.addEventListener('change', () => { if (inputs.o2_no.checked) inputs.o2_yes.checked = false; });
     const collect = () => { const o = {cad}; for (const [k, i] of Object.entries(inputs)) o[k] = i.type === 'checkbox' ? i.checked : i.value; o.saved_at = nowISO(); return o; };
-    const saveAs = async (status) => { const o = collect(); if (status) o.status = status; store.set(key, o); if (status && rid) { await put('reports/' + rid, {sheet: status, _mod: nowISO(), _by: 'tablet'}, true); if (S.reports[rid]) S.reports[rid].sheet = status; } toast(status ? `Sheet marked ${status}` : 'Saved on this tablet'); };
+    const saveAs = async (status) => { const o = collect(); if (status) o.status = status; vault.sheets[cad] = o; saveVault(); if (status && rid) { await put('reports/' + rid, {sheet: status, _mod: nowISO(), _by: 'tablet'}, true); if (S.reports[rid]) S.reports[rid].sheet = status; } toast(status ? `Sheet marked ${status}` : 'Saved on this tablet'); };
     const copy = async () => { const o = collect(); const lines = []; for (const [title, fields] of AS) { const parts = fields.map((fd) => fd.type === 'check' ? (o[fd.name] ? fd.label : '') : (o[fd.name] ? `${fd.label}: ${o[fd.name]}` : '')).filter(Boolean); if (parts.length) lines.push(`${title} - ${parts.join('; ')}`); } const t = `Assessment ${cad}\n` + lines.join('\n'); try { await navigator.clipboard.writeText(t); toast('Findings copied'); } catch (e) { modal(el('div', {class: 'box'}, el('h2', {text: 'Copy findings'}), el('textarea', {rows: '10', readonly: true}, t), el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn', text: 'Close', onclick: closeModal})))); } };
     const sh = el('div', {class: 'sheet', style: 'z-index:30', role: 'dialog', 'aria-label': 'Assessment sheet'},
       el('div', {class: 'bar'}, el('button', {type: 'button', class: 'btn ghost', text: '← Back', onclick: () => sh.remove()}), el('h2', {text: 'Assessment · ' + cad}), el('span', {class: 'grow'}), el('span', {class: 'note', text: v.status ? 'Status: ' + v.status : v.saved_at ? 'Saved ' + fmtWhen(v.saved_at) : 'New sheet'})),
@@ -1229,7 +1580,7 @@ body:not(.locked) .gate{display:none}
   }
   let statYear = '';
   function renderStats() {
-    const v = $('#v-stats'); v.replaceChildren(); const all = Object.values(S.reports);
+    const v = $('#v-stats'); v.replaceChildren(); v.append(progressSection()); const all = Object.values(S.reports);
     const years = [...new Set(all.map((r) => (r.date || '').slice(0, 4)).filter(Boolean))].sort().reverse();
     const R = all.filter((r) => !r.test).filter((r) => !statYear || (r.date || '').startsWith(statYear));
     const by = (fn) => R.reduce((o, r) => { const k = fn(r) || '—'; o[k] = (o[k] || 0) + 1; return o; }, {});
@@ -1240,7 +1591,9 @@ body:not(.locked) .gate{display:none}
     v.append(el('div', {class: 'row', style: 'margin-bottom:12px'}, el('h2', {style: 'margin:0;font:700 22px var(--display)', text: `Stats · ${R.length} calls`}), el('span', {class: 'grow'}), sel),
       el('div', {class: 'statgrid'}, el('div', {class: 'sec'}, el('h3', {text: 'Calls by month'}), mk.length ? el('div', {class: 'cols'}, mk.map((k) => el('div', {class: 'col'}, el('b', {text: String(month[k])}), el('i', {style: `height:${(month[k] / mmax * 100).toFixed(0)}%`}), el('span', {text: MON[Number(k) - 1]})))) : el('p', {class: 'note', text: 'No data yet.'})),
         bars('Calls by NERIS type', by((r) => (r.ntypes || [])[0] ? ntLabel(r.ntypes[0]).split(' > ').pop() : (r.type || '').replace(/\s*\(\w+\)$/, ''))), bars('Calls by zone', by((r) => r.zone)), bars('Calls by stage', by((r) => r.stage)),
-        bars('Miles per unit (mileage log)', miles, (n) => Math.round(n) + ' mi'), bars('Who was OIC', by((r) => r.oic))));
+        bars('Miles per unit (mileage log)', miles, (n) => Math.round(n) + ' mi'), bars('Who was OIC', by((r) => r.oic)),
+        (() => { const z = {}; R.forEach((r) => { const d0 = dispatchAt(r); const t = r.resp && r.resp.onscene ? minsBetween(d0, r.resp.onscene) : null; if (t != null && t >= 0 && t < 120) { const k = (r.zone || '—').replace(' (OUT)', ''); (z[k] = z[k] || []).push(t); } }); const avg = Object.fromEntries(Object.entries(z).map(([k, a]) => [`${k} (${a.length} call${a.length > 1 ? 's' : ''})`, Math.round(a.reduce((x, y) => x + y, 0) / a.length)])); const b = bars('Average response time by zone (dispatch to on scene)', avg, (n) => n + ' min'); if (!Object.keys(avg).length) b.append(el('p', {class: 'note', text: 'Builds as calls are stamped in response mode.'})); return b; })(),
+        (() => { const seen = new Set(); const cl = {}; R.filter((r) => r.la && r.lo).forEach((r) => { if (seen.has(r.id)) return; const near = repeatsOf(r).filter((x) => !seen.has(x.id)); if (near.length >= 2) { [r, ...near].forEach((x) => seen.add(x.id)); cl[`${r.area || 'Unknown'} (${[r, ...near].map((x) => x.num).sort().join(', ')})`] = near.length + 1; } }); const b = bars('Repeat addresses (90 days)', cl); return b; })()));
   }
 
   // ---------- sign-in, users and auto-lock (ported from the PC app; accounts live on this tablet only) ----------
@@ -1322,9 +1675,10 @@ body:not(.locked) .gate{display:none}
     if (!u.pin) { if (auto) { logOut(reason + ' Set a lock PIN in Settings to use the quick lock screen.'); return; } showPin('set', u, 'Set a PIN to use the lock screen.', 'lock'); return; }
     sess.set('locked', '1'); showPin('unlock', u, reason === 'Locked.' ? '' : reason);
   }
-  function logOut(reason) { sess.set('unlocked', null); sess.set('user', null); sess.set('locked', null); PC.card.hidden = true; document.body.classList.add('locked'); closeModal(); setMode('signin', reason); }
+  function logOut(reason) { dropKeys(); sess.set('unlocked', null); sess.set('user', null); sess.set('locked', null); PC.card.hidden = true; document.body.classList.add('locked'); closeModal(); setMode('signin', reason); }
   function unlockApp(u) { sess.set('locked', null); PC.card.hidden = true; sess.set('unlocked', '1'); sess.set('user', u.username); store.set('lastuser', u.username); document.body.classList.remove('locked'); fails = 0; lastAct = Date.now(); $('#lockBtn').title = `Signed in as ${u.username} - tap to lock`; if (view === 'settings') renderSettings(); if (store.get('resp', '') && S.reports[store.get('resp', '')] && !pendingOpen) setTimeout(() => openResponse(store.get('resp', '')), 60);
-    if (pendingOpen) { const id = pendingOpen; pendingOpen = ''; setTimeout(() => openFromPop(id), 50); } }
+    if (pendingOpen) { const id = pendingOpen; pendingOpen = ''; setTimeout(() => openFromPop(id), 50); }
+    if (new URLSearchParams(location.search).get('tv') === '1' && !$('#tvHost')) setTimeout(openTV, 400); }
   function shake(t) { GT.form.classList.remove('shake'); void GT.form.offsetWidth; GT.form.classList.add('shake'); GT.msg.textContent = t; }
   function slow() { const now = Date.now(); if (now < waitUntil) { GT.msg.textContent = `Too many tries - wait ${Math.ceil((waitUntil - now) / 1000)} s.`; return true; } return false; }
   function miss(t) { fails++; if (fails >= 5) { waitUntil = Date.now() + 30000; fails = 0; shake('Wrong 5 times - wait 30 seconds.'); } else shake(t); }
@@ -1332,16 +1686,16 @@ body:not(.locked) .gate{display:none}
   GT.alt.addEventListener('click', () => setMode(gmode === 'signin' ? 'create' : 'signin'));
   GT.form.addEventListener('submit', async (e) => {
     e.preventDefault(); GT.msg.textContent = '';
-    if (gmode === 'setup') { const bad = checkNew(); if (bad) { GT.msg.textContent = bad; return; } GT.btn.disabled = true; const u = await makeUser(GT.user.value, GT.pw.value); udb = {v: 3, users: [u]}; saveUsers(); GT.btn.disabled = false; showPin('set', u, 'Last step: a 4-digit PIN for the lock screen.', 'login'); return; }
+    if (gmode === 'setup') { const bad = checkNew(); if (bad) { GT.msg.textContent = bad; return; } GT.btn.disabled = true; const u = await makeUser(GT.user.value, GT.pw.value); u.role = 'officer'; udb = {v: 3, users: [u]}; saveUsers(); await keysAfterLogin(u, GT.pw.value); GT.btn.disabled = false; showPin('set', u, 'Last step: a 4-digit PIN for the lock screen.', 'login'); return; }
     if (slow()) return;
     if (gmode === 'create') {
       const bad = checkNew(); if (bad) { GT.msg.textContent = bad; return; }
       GT.btn.disabled = true; const ap = await verify(GT.aUser.value, GT.aPw.value);
       if (!ap) { GT.btn.disabled = false; GT.aPw.value = ''; miss('Approval failed - check the existing user and password.'); return; }
-      const u = await makeUser(GT.user.value, GT.pw.value); u.created_by = ap.username; udb.users.push(u); saveUsers(); GT.btn.disabled = false;
+      const u = await makeUser(GT.user.value, GT.pw.value); u.created_by = ap.username; u.role = 'member'; const raw = (await unwrapFor(ap, GT.aPw.value)) || sessRaw(); if (raw) await wrapFor(u, GT.pw.value, raw); udb.users.push(u); saveUsers(); GT.btn.disabled = false;
       store.set('lastuser', u.username); setMode('signin', `User "${u.username}" created - sign in below.`); return;
     }
-    GT.btn.disabled = true; const u = await verify(GT.user.value, GT.pw.value); GT.btn.disabled = false;
+    GT.btn.disabled = true; const pwv = GT.pw.value; const u = await verify(GT.user.value, pwv); if (u) await keysAfterLogin(u, pwv); GT.btn.disabled = false;
     if (u) { if (u.pin) unlockApp(u); else showPin('set', u, 'Last step: a 4-digit PIN for the lock screen.', 'login'); return; }
     GT.pw.value = ''; miss('Username or password is wrong.');
   });
@@ -1351,7 +1705,7 @@ body:not(.locked) .gate{display:none}
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !isLocked() && idleOver()) lockApp(`Locked after ${lockSet().autolock} minutes idle.`, true); });
   $('#lockBtn').addEventListener('click', () => lockApp('Locked.'));
   function startGate() {
-    if (udb && sess.get('unlocked') === '1' && me()) { if (sess.get('locked') === '1' && me().pin) showPin('unlock', me(), 'Locked.'); else unlockApp(me()); return; }   // same session, just reloaded
+    if (udb && sess.get('unlocked') === '1' && me()) { keysFromSession(); if (sess.get('locked') === '1' && me().pin) showPin('unlock', me(), 'Locked.'); else unlockApp(me()); return; }   // same session, just reloaded
     document.body.classList.add('locked');
     if (lockSet().splash) { $('#splash').hidden = false; GT.form.hidden = true; setTimeout(() => setMode('signin'), 1400); } else setMode('signin');
   }
@@ -1369,19 +1723,20 @@ body:not(.locked) .gate{display:none}
       const other = findUser(nu); if (other && other !== uu) { out.textContent = 'That username is already taken.'; return; }
       if (f.n1.value && f.n1.value.length < 4) { out.textContent = 'New password needs at least 4 characters.'; return; }
       if (f.n1.value !== f.n2.value) { out.textContent = 'New password entries do not match.'; return; }
-      const fresh = await makeUser(nu, f.n1.value || f.cur.value); if (uu.created_by) fresh.created_by = uu.created_by;
+      const fresh = await makeUser(nu, f.n1.value || f.cur.value); if (uu.created_by) fresh.created_by = uu.created_by; fresh.role = uu.role; if (uu.pin) fresh.pin = uu.pin; { const raw = sessRaw() || (await unwrapFor(uu, f.cur.value)); if (raw) await wrapFor(fresh, f.n1.value || f.cur.value, raw); }
       udb.users[udb.users.indexOf(uu)] = fresh; saveUsers(); sess.set('user', fresh.username); store.set('lastuser', fresh.username); toast('Saved'); renderSettings();
     };
     return el('div', {class: 'sec'}, el('h3', {text: 'Sign-in & lock'}),
-      el('p', {class: 'note', text: u ? `Signed in as ${u.username} · password last changed ${u.set_at ? fmtWhen(u.set_at) : '—'}.` : 'Not signed in.'}),
+      el('p', {class: 'note', text: u ? `Signed in as ${u.username} (${ROLES[roleOf(u)]}) · password last changed ${u.set_at ? fmtWhen(u.set_at) : '—'}.` : 'Not signed in.'}),
       el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn primary', text: 'Lock now', onclick: () => lockApp('Locked.')}), el('button', {type: 'button', class: 'btn', text: u && u.pin ? 'Change lock PIN' : 'Set lock PIN', onclick: () => { if (!u) return; if (u.pin) showPin('verify', u, '', 'change'); else showPin('set', u, '', 'change'); }}), el('button', {type: 'button', class: 'btn ghost', text: 'Log out', onclick: () => confirmBox('Log out?', 'You will need your username and password to get back in.', 'Log out', () => logOut('Logged out.'))}), el('label', {class: 'field'}, 'Auto-lock when idle', auto)),
       el('label', {class: 'row', style: 'gap:10px;min-height:var(--tap)'}, spl, 'Show the Station 93 splash screen when the app opens'),
       el('details', {}, el('summary', {}, el('b', {text: 'Change my username or password'})), el('div', {class: 'grid', style: 'margin-top:10px'},
         el('label', {class: 'span2'}, 'Current password or PIN', f.cur), el('label', {class: 'span2'}, 'Username', f.user), el('label', {class: 'span2'}, 'New password or PIN (blank = keep)', f.n1), el('label', {class: 'span2'}, 'New password again', f.n2)),
         el('div', {class: 'row', style: 'margin-top:8px'}, el('button', {type: 'button', class: 'btn', text: 'Save', onclick: change}), out)),
       el('b', {text: 'Users on this tablet'}),
-      el('ul', {class: 'userlist'}, (udb ? udb.users : []).map((x) => el('li', {}, el('span', {class: 'grow', text: `${x.username}${u && x === u ? ' · you' : ''}${x.created_by ? ' · added by ' + x.created_by : ''}`}),
-        u && x === u ? null : el('button', {type: 'button', class: 'btn ghost', text: 'Remove', onclick: () => confirmBox(`Remove ${x.username}?`, 'They will no longer be able to sign in on this tablet.', 'Remove', () => { udb.users = udb.users.filter((y) => y !== x); saveUsers(); renderSettings(); toast('User removed'); })})))),
+      el('ul', {class: 'userlist'}, (udb ? udb.users : []).map((x) => el('li', {}, el('span', {class: 'grow', text: `${x.username}${u && x === u ? ' · you' : ''} · ${ROLES[roleOf(x)]}${x.created_by ? ' · added by ' + x.created_by : ''}${x.wrap ? '' : ' · no locked-notes key yet'}`}),
+        isOfficer() && !(u && x === u) ? (() => { const rs = el('select', {'aria-label': 'Role for ' + x.username, style: 'width:auto'}, Object.entries(ROLES).map(([k, l]) => el('option', {value: k, text: l, selected: roleOf(x) === k}))); rs.addEventListener('change', () => { x.role = rs.value; saveUsers(); toast(`${x.username} is now ${ROLES[rs.value]}`); }); return rs; })() : null,
+        u && x === u || !isOfficer() ? null : el('button', {type: 'button', class: 'btn ghost', text: 'Remove', onclick: () => confirmBox(`Remove ${x.username}?`, 'They will no longer be able to sign in on this tablet.', 'Remove', () => { udb.users = udb.users.filter((y) => y !== x); saveUsers(); renderSettings(); toast('User removed'); })})))),
       el('p', {class: 'note', text: 'New users are added from the sign-in screen (Create new user) with an existing user\'s approval. Passwords are never stored - only a scrambled check value on this tablet. Forgot it? Another user can sign in and remove your account so you can be added again. If nobody can sign in, clear this site\'s data in Chrome: calls come back from Google Drive at the next sync, but tablet-only assessment sheets would be lost.'}));
   }
   function renderSettings() {
@@ -1405,9 +1760,13 @@ body:not(.locked) .gate{display:none}
           el('label', {class: 'field'}, 'Google sign-in ID (from your Google Cloud project)', cid));
       })(),
       bryxSection(),
+      calSection(),
+      tvSection(),
+      devicesSection(),
+      logSection(),
       backupSection(),
       appSection(),
-      el('div', {class: 'sec'}, el('h3', {text: 'Assessment sheets on this tablet'}), (() => { const keys = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('st93t.as.')) keys.push(k.slice(9)); } } catch (e) { /* blocked */ } return keys.length ? el('div', {class: 'row'}, keys.sort().map((c) => el('button', {type: 'button', class: 'opt', text: c, onclick: () => { const r = Object.values(S.reports).find((x) => x.cad === c); openAssessment(c, r && r.id, r && r.date); }}))) : el('p', {class: 'note', text: 'None saved on this tablet.'}); })())));
+      el('div', {class: 'sec'}, el('h3', {text: 'Assessment sheets on this tablet (locked)'}), (() => { const keys = Object.keys(vault.sheets || {}); if (!DEK) return el('p', {class: 'note', text: 'Sign in with your password to see them.'}); return keys.length ? el('div', {class: 'row'}, keys.sort().map((c) => el('button', {type: 'button', class: 'opt', text: c, onclick: () => { const r = Object.values(S.reports).find((x) => x.cad === c); openAssessment(c, r && r.id, r && r.date); }}))) : el('p', {class: 'note', text: 'None saved on this tablet.'}); })())));
   }
 
   // ---------- dark / light mode (crescent moon in the header) ----------
