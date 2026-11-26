@@ -343,7 +343,7 @@ body.bd-night .app{filter:brightness(.88)}
 <script>
 (function () {
   'use strict';
-  const APPV = '2.3.0';
+  const APPV = '2.3.1';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -585,6 +585,22 @@ body.bd-night .app{filter:brightness(.88)}
     outbox = []; store.set('outbox', outbox); dirty = false; store.set('dirty', false); saveCfg();
     return got;
   }
+  // ----- device settings shared by all devices (a separate small Drive file, never read by Claude): the Google Maps key -----
+  async function syncSettings() {
+    if (cfg.maps_key && !cfg.maps_key_at) { cfg.maps_key_at = nowISO(); saveCfg(); }
+    let f = null;
+    if (cfg.settingsId) { try { f = await (await gd(`${API}/files/${cfg.settingsId}?fields=id,modifiedTime,trashed`)).json(); if (f.trashed) { f = null; cfg.settingsId = ''; } } catch (e) { if (e.code === 404) { cfg.settingsId = ''; f = null; } else throw e; } }
+    if (!f) { f = (await find(`name='station93-settings.json' and '${cfg.syncId}' in parents`))[0] || null; if (f) cfg.settingsId = f.id; }
+    let remote = {};
+    if (f && f.modifiedTime !== cfg.settings_mod) { remote = await getJSON(f.id); cfg.settings_mod = f.modifiedTime; cfg.settings_remote_at = remote.maps_key_at || ''; if (newer(remote.maps_key_at, cfg.maps_key_at || '')) { const had = cfg.maps_key; cfg.maps_key = remote.maps_key || ''; cfg.maps_key_at = remote.maps_key_at; cfg.maps_err = ''; if (had !== cfg.maps_key) { toast(cfg.maps_key ? 'Google Maps key added from your other device' : 'Google Maps key removed on your other device'); if (!cfg.maps_key) { mapMode = 'station'; store.set('mapMode', 'station'); } } } }
+    if (newer(cfg.maps_key_at || '', cfg.settings_remote_at || '')) {
+      const body = JSON.stringify({v: 1, note: 'Station 93 device settings shared by your devices', maps_key: cfg.maps_key || '', maps_key_at: cfg.maps_key_at, updated_by: cfg.device_name || DEV});
+      if (cfg.settingsId) { const r = await (await gd(`${UP}/files/${cfg.settingsId}?uploadType=media&fields=id,modifiedTime`, {method: 'PATCH', headers: {'Content-Type': 'application/json'}, body})).json(); cfg.settings_mod = r.modifiedTime; }
+      else { cfg.settingsId = await createFile({name: 'station93-settings.json', mimeType: 'application/json', parents: [cfg.syncId]}, body); cfg.settings_mod = (await (await gd(`${API}/files/${cfg.settingsId}?fields=modifiedTime`)).json()).modifiedTime; }
+      cfg.settings_remote_at = cfg.maps_key_at;
+    }
+    saveCfg();
+  }
   // ----- cleanup: notes, narrative and the tablet-only sheet go 30 days after a report is Completed (FireWorks keeps the report) -----
   const KEEP_DAYS = 30;
   function retention() {
@@ -620,7 +636,7 @@ body.bd-night .app{filter:brightness(.88)}
       const rs = (await find(`'${cfg.fromId}' in parents and name contains 'from-claude-'`, 'name desc')).slice(0, 5).reverse();
       for (const f of rs) { if (cfg.claude_seen && f.name <= cfg.claude_seen) continue; const j = await getJSON(f.id); got += applyClaude(j); cfg.claude_seen = f.name; cfg.claude_at = j.generated_at || f.modifiedTime; }
       if (manual) cfg.sync_requested_at = nowISO();
-      retention(); got += await syncShared(); calSync(false);
+      retention(); got += await syncShared(); try { await syncSettings(); } catch (e) { /* settings file is optional */ } calSync(false);
       S.ready = true; persist(); refreshMe(); await flushPops(); offerRespond(); if (!cfg.notify_armed) { cfg.notify_armed = true; saveCfg(); }
       cfg.last_sync = nowISO(); cfg.last_err = ''; saveCfg(); setNet(outbox.length ? 'ok' : 'ok');
       if (manual) toast(got ? `Synced - ${got} update${got > 1 ? 's' : ''} received` : 'Synced - nothing new');
@@ -1611,10 +1627,10 @@ body.bd-night .app{filter:brightness(.88)}
   function mapsSection() {
     const k = el('input', {type: 'password', value: cfg.maps_key || '', placeholder: 'AIza…', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Google Maps key', style: 'max-width:420px'});
     return el('div', {class: 'sec'}, el('h3', {text: 'Google Maps'}),
-      el('p', {class: 'note', text: 'Adds Street and Satellite maps to the Map tab, under the same district and zone lines (the station map stays and works offline). The key is kept on this device only - never in the app code or the shared Drive file.'}),
-      el('div', {class: 'row'}, el('span', {class: 'note', style: 'min-width:170px', text: 'Status'}), el('span', {text: cfg.maps_key ? (cfg.maps_err ? 'Key saved - problem: ' + cfg.maps_err : 'Key saved on this device') : 'No key'})),
-      el('div', {class: 'row'}, k, el('button', {type: 'button', class: 'btn primary', text: 'Save key', onclick: () => { const v2 = k.value.trim(); if (!/^[A-Za-z0-9_-]{30,60}$/.test(v2)) { toast('That does not look like a Google Maps key'); return; } const had = !!(window.google && google.maps); cfg.maps_key = v2; cfg.maps_err = ''; saveCfg(); toast(had ? 'Saved - restart the app to use the new key' : 'Key saved'); renderSettings(); }}),
-        cfg.maps_key ? el('button', {type: 'button', class: 'btn ghost', text: 'Remove', onclick: () => { cfg.maps_key = ''; saveCfg(); mapMode = 'station'; store.set('mapMode', 'station'); renderSettings(); toast('Key removed'); }}) : null),
+      el('p', {class: 'note', text: 'Adds Street and Satellite maps to the Map tab, under the same district and zone lines (the station map stays and works offline). The key is shared with your other Station 93 devices through a small settings file in your Drive (sync/station93-settings.json) - never in the app code, the shared data file, backups or anything Claude reads.'}),
+      el('div', {class: 'row'}, el('span', {class: 'note', style: 'min-width:170px', text: 'Status'}), el('span', {text: cfg.maps_key ? (cfg.maps_err ? 'Key saved - problem: ' + cfg.maps_err : (cfg.settings_remote_at === cfg.maps_key_at ? 'Key saved - shared with your other devices' : 'Key saved - shares at the next sync')) : 'No key'})),
+      el('div', {class: 'row'}, k, el('button', {type: 'button', class: 'btn primary', text: 'Save key', onclick: () => { const v2 = k.value.trim(); if (!/^[A-Za-z0-9_-]{30,60}$/.test(v2)) { toast('That does not look like a Google Maps key'); return; } const had = !!(window.google && google.maps); cfg.maps_key = v2; cfg.maps_key_at = nowISO(); cfg.maps_err = ''; saveCfg(); schedulePush(); toast(had ? 'Saved - restart the app to use the new key' : 'Key saved'); renderSettings(); }}),
+        cfg.maps_key ? el('button', {type: 'button', class: 'btn ghost', text: 'Remove', onclick: () => { cfg.maps_key = ''; cfg.maps_key_at = nowISO(); saveCfg(); schedulePush(); mapMode = 'station'; store.set('mapMode', 'station'); renderSettings(); toast('Key removed'); }}) : null),
       el('p', {class: 'note', text: 'Lock the key down in Google Cloud > APIs & Services > Credentials: Websites = https://hikaristeal.github.io/*, APIs = Maps JavaScript API (add Geocoding and Maps Static later if we use them), and set a billing budget alert.'}));
   }
   function drawMap() {
