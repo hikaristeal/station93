@@ -227,6 +227,7 @@ body:not(.locked) .gate{display:none}
 .svc.lockb{display:inline-flex;align-items:center;gap:6px}.svc.lockb svg{width:18px;height:18px}
 .userlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.userlist li{display:flex;align-items:center;gap:8px;min-height:44px;border-bottom:1px solid var(--line)}
 /* v2.1 */
+.gmapwrap{touch-action:auto}.gmapwrap>div{width:100%;height:100%}
 .crewpicks{display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow:auto}.crewpick{border:1px solid var(--line);border-radius:var(--r);padding:4px 10px}
 .steps{display:flex;gap:3px;margin-top:6px;max-width:220px}.steps i{flex:1;height:6px;border-radius:3px;background:var(--line)}.steps i.on{background:var(--ok)}
 .steps.big{max-width:none;gap:6px;margin:0}.steps.big span{flex:1;display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted);text-align:center}.steps.big span i{height:8px;border-radius:4px;background:var(--line);display:block}.steps.big span.on{color:var(--fg)}.steps.big span.on i{background:var(--ok)}
@@ -342,7 +343,7 @@ body.bd-night .app{filter:brightness(.88)}
 <script>
 (function () {
   'use strict';
-  const APPV = '2.2.0';
+  const APPV = '2.3.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -1566,13 +1567,62 @@ body.bd-night .app{filter:brightness(.88)}
     const res = el('div', {class: 'sec mapres', id: 'mapRes'}, el('span', {class: 'note', text: 'Tap anywhere on the map, or enter coordinates, to get the District and Zone. Drag to move, pinch or use + / − to zoom.'}));
     const co = el('input', {type: 'text', id: 'mapCo', placeholder: '30.7677, -86.1162', inputmode: 'decimal', 'aria-label': 'Coordinates'});
     v.append(el('div', {class: 'row', style: 'margin-bottom:10px'}, el('div', {style: 'flex:1;min-width:200px'}, co), el('button', {type: 'button', class: 'btn primary', text: 'Look up zone', onclick: () => { const m = /(-?\d+\.\d+)\s*[, ]\s*(-?\d+\.\d+)/.exec(co.value); if (!m) { toast('Enter coordinates like 30.7677, -86.1162'); return; } let la = Number(m[1]), lo = Number(m[2]); if (la < 0) [la, lo] = [lo, la]; lookup(la, lo); }})),
-      res, el('div', {class: 'mapwrap', id: 'mapBox', style: 'margin-top:10px'}), el('div', {class: 'legend', style: 'margin-top:8px'}, [['NORTH', 'var(--blue)'], ['EAST', '#8a5cc2'], ['SOUTH', 'var(--warn)'], ['OUT', 'var(--gray)']].map(([n, c]) => el('span', {}, el('i', {style: 'background:' + c}), n)), el('span', {text: 'Solid line: AVFD district · Dashed: North zone line · Dots: open calls'})));
+      res, el('div', {class: 'row', id: 'mapModes', style: 'margin-top:10px'}), el('div', {class: 'mapwrap', id: 'mapBox', style: 'margin-top:10px'}), el('div', {class: 'mapwrap gmapwrap', id: 'gmapBox', style: 'margin-top:10px', hidden: true}), el('div', {class: 'legend', style: 'margin-top:8px'}, [['NORTH', 'var(--blue)'], ['EAST', '#8a5cc2'], ['SOUTH', 'var(--warn)'], ['OUT', 'var(--gray)']].map(([n, c]) => el('span', {}, el('i', {style: 'background:' + c}), n)), el('span', {text: 'Solid line: AVFD district · Dashed: North zone line · Dots: open calls'})));
     drawMap();
   }
   let mapMarker = null;
   function lookup(la, lo) { const z = window.NerisZones.lookup(la, lo, ''); $('#mapRes').replaceChildren(el('b', {text: `${z.district === 'OUT' ? 'District OUT' : 'District ARGYLE'} · Zone ${z.zone}`}), el('span', {class: 'note', text: ` ${la.toFixed(5)}, ${lo.toFixed(5)} · ${z.why}${z.agency ? ' · likely ' + z.agency : ''}`})); mapMarker = [la, lo]; drawMap(); }
+  // ----- Google Maps layer on top of the station map (key kept in this device's settings only) -----
+  let mapMode = store.get('mapMode', 'station'), gmap = null, gmMarkers = [], gmPick = null, gmLoading = null;
+  const ZHEX = (z) => /OUT|WEST/.test(z || '') ? '#7b847e' : /^NORTH/.test(z || '') ? '#2d66b0' : /^EAST/.test(z || '') ? '#8a5cc2' : /^SOUTH/.test(z || '') ? '#a35a00' : '#7b847e';
+  function loadGmaps() {
+    if (window.google && google.maps && google.maps.Map) return Promise.resolve(true);
+    if (gmLoading) return gmLoading;
+    window.gm_authFailure = () => { cfg.maps_err = 'Google rejected the Maps key - check that it allows https://hikaristeal.github.io/* and the Maps JavaScript API'; saveCfg(); toast(cfg.maps_err); };
+    gmLoading = new Promise((res) => { window.__st93gm = () => res(true); const sc = document.createElement('script'); sc.async = true; sc.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(cfg.maps_key || '')}&v=weekly&callback=__st93gm`; sc.addEventListener('error', () => { gmLoading = null; res(false); }); document.head.append(sc); setTimeout(() => res(!!(window.google && google.maps && google.maps.Map)), 12000); });
+    return gmLoading;
+  }
+  function drawModes() {
+    const h = $('#mapModes'); if (!h) return;
+    const set = (m) => { mapMode = m; store.set('mapMode', m); drawMap(); };
+    h.replaceChildren(...[...[['station', 'Station map'], ['roadmap', 'Street map'], ['hybrid', 'Satellite']].map(([k, l]) => el('button', {type: 'button', class: 'chip' + (mapMode === k ? ' on' : ''), text: l, onclick: () => { if (k !== 'station' && !cfg.maps_key) { toast('Add your Google Maps key in Settings first'); show('settings'); return; } set(k); }})),
+      !cfg.maps_key ? el('span', {class: 'note', text: 'Street and satellite maps need a Google Maps key (Settings > Google Maps).'}) : null].filter(Boolean));
+  }
+  async function drawGmap() {
+    const box = $('#gmapBox'); if (!box) return;
+    if (!(await loadGmaps())) { box.replaceChildren(el('div', {class: 'empty', text: 'Google Maps did not load - check the key in Settings and the connection. The station map still works offline.'})); gmap = null; return; }
+    const P = (pts) => pts.map(([la, lo]) => ({lat: la, lng: lo}));
+    if (!gmap) {
+      box.replaceChildren();
+      gmap = new google.maps.Map(box, {center: {lat: 30.74, lng: -86.08}, zoom: 11, mapTypeId: mapMode, gestureHandling: 'greedy', streetViewControl: false, mapTypeControl: false, clickableIcons: false, fullscreenControl: true});
+      new google.maps.Polygon({map: gmap, paths: P(G.district), strokeColor: '#111111', strokeWeight: 3, fillColor: '#b3261e', fillOpacity: 0.05, clickable: false});
+      if (G.north) new google.maps.Polyline({map: gmap, path: P(G.north.concat([G.north[0]])), strokeOpacity: 0, clickable: false, icons: [{icon: {path: 'M 0,-1 0,1', strokeOpacity: 1, strokeColor: '#2d66b0', strokeWeight: 3, scale: 3}, offset: '0', repeat: '14px'}]});
+      const bd = new google.maps.LatLngBounds(); G.district.forEach(([la, lo]) => bd.extend({lat: la, lng: lo})); gmap.fitBounds(bd);
+      gmap.addListener('click', (e) => lookup(e.latLng.lat(), e.latLng.lng()));
+    } else if (gmap.getMapTypeId() !== mapMode) gmap.setMapTypeId(mapMode);
+    gmMarkers.forEach((m) => m.setMap(null)); gmMarkers = [];
+    for (const r of Object.values(S.reports).filter((x) => !x.test && x.la && x.lo && OPEN.includes(x.stage))) {
+      const m = new google.maps.Marker({map: gmap, position: {lat: r.la, lng: r.lo}, title: `${r.num} · ${r.type || 'Call'} · ${r.area || ''}`, icon: {path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: ZHEX(r.zone), fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2}});
+      m.addListener('click', () => openCall(r.id)); gmMarkers.push(m);
+    }
+    if (gmPick) gmPick.setMap(null); gmPick = mapMarker ? new google.maps.Marker({map: gmap, position: {lat: mapMarker[0], lng: mapMarker[1]}, title: 'Looked-up point'}) : null;
+    if (mapMarker) gmap.panTo({lat: mapMarker[0], lng: mapMarker[1]});
+  }
+  function mapsSection() {
+    const k = el('input', {type: 'password', value: cfg.maps_key || '', placeholder: 'AIza…', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Google Maps key', style: 'max-width:420px'});
+    return el('div', {class: 'sec'}, el('h3', {text: 'Google Maps'}),
+      el('p', {class: 'note', text: 'Adds Street and Satellite maps to the Map tab, under the same district and zone lines (the station map stays and works offline). The key is kept on this device only - never in the app code or the shared Drive file.'}),
+      el('div', {class: 'row'}, el('span', {class: 'note', style: 'min-width:170px', text: 'Status'}), el('span', {text: cfg.maps_key ? (cfg.maps_err ? 'Key saved - problem: ' + cfg.maps_err : 'Key saved on this device') : 'No key'})),
+      el('div', {class: 'row'}, k, el('button', {type: 'button', class: 'btn primary', text: 'Save key', onclick: () => { const v2 = k.value.trim(); if (!/^[A-Za-z0-9_-]{30,60}$/.test(v2)) { toast('That does not look like a Google Maps key'); return; } const had = !!(window.google && google.maps); cfg.maps_key = v2; cfg.maps_err = ''; saveCfg(); toast(had ? 'Saved - restart the app to use the new key' : 'Key saved'); renderSettings(); }}),
+        cfg.maps_key ? el('button', {type: 'button', class: 'btn ghost', text: 'Remove', onclick: () => { cfg.maps_key = ''; saveCfg(); mapMode = 'station'; store.set('mapMode', 'station'); renderSettings(); toast('Key removed'); }}) : null),
+      el('p', {class: 'note', text: 'Lock the key down in Google Cloud > APIs & Services > Credentials: Websites = https://hikaristeal.github.io/*, APIs = Maps JavaScript API (add Geocoding and Maps Static later if we use them), and set a billing budget alert.'}));
+  }
   function drawMap() {
-    const box = $('#mapBox'); if (!box) return; box.replaceChildren();
+    drawModes();
+    const sb = $('#mapBox'), gb = $('#gmapBox'); if (!sb) return;
+    const goog = mapMode !== 'station' && !!cfg.maps_key; sb.hidden = goog; if (gb) gb.hidden = !goog;
+    if (goog) { drawGmap(); return; }
+    const box = sb; box.replaceChildren();
     const la = G.district.map((p) => p[0]), lo = G.district.map((p) => p[1]); const b = {la0: Math.min(...la) - 0.02, la1: Math.max(...la) + 0.02, lo0: Math.min(...lo) - 0.03, lo1: Math.max(...lo) + 0.03};
     const kx = Math.cos((b.la0 + b.la1) / 2 * Math.PI / 180); const W = 1000, H = Math.round(W * (b.la1 - b.la0) / ((b.lo1 - b.lo0) * kx));
     const X = (x) => (x - b.lo0) / (b.lo1 - b.lo0) * W, Y = (y) => (b.la1 - y) / (b.la1 - b.la0) * H;
@@ -1790,6 +1840,7 @@ body.bd-night .app{filter:brightness(.88)}
           el('label', {class: 'field'}, 'Google sign-in ID (from your Google Cloud project)', cid));
       })(),
       bryxSection(),
+      mapsSection(),
       calSection(),
       tvSection(),
       devicesSection(),
