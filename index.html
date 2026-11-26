@@ -344,7 +344,7 @@ body.bd-night .app{filter:brightness(.88)}
 <script>
 (function () {
   'use strict';
-  const APPV = '2.4.0';
+  const APPV = '2.4.1';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -1238,7 +1238,7 @@ body.bd-night .app{filter:brightness(.88)}
     const pickVeh = unitcrew.map((u) => u.unit).find((u) => S.mileage[u]); if (pickVeh) veh.value = pickVeh;
     const endMi = el('input', {type: 'text', inputmode: 'decimal', placeholder: 'A903: 166382.4', style: 'max-width:200px'}); const endH = el('input', {type: 'text', inputmode: 'numeric', placeholder: 'Hours', style: 'max-width:140px'});
     const begInfo = el('span', {class: 'note'});
-    const syncVeh = () => { const m = S.mileage[veh.value]; const last = m && (m.rows || [])[m.rows.length - 1]; begInfo.textContent = last ? `starts at ${last.end}` : ''; endH.hidden = veh.value !== 'EG906'; };
+    const syncVeh = () => { const m = S.mileage[veh.value]; const last = m && (m.rows || [])[m.rows.length - 1]; const st0 = m && m.meta && m.meta.start; begInfo.textContent = last ? `starts at ${last.end}` : st0 ? `starts at ${st0}` : ''; endH.hidden = !milHrs(veh.value); };
     veh.addEventListener('change', syncVeh); syncVeh();
     const clrBtn = el('button', {type: 'button', class: 'btn primary', text: 'Clear call', onclick: () => clearCall(veh.value, endMi.value.trim(), endH.value.trim())});
     const clrNote = el('p', {class: 'note'}); const clrTitle = el('span', {text: 'Clear call'});
@@ -1291,12 +1291,12 @@ body.bd-night .app{filter:brightness(.88)}
     async function clearCall(v, end, endh) {
       if (r.test) { const saved = await save(); if (!saved) return; await put('reports/' + saved.id, {cleared_at: nowISO(), needs: 'Test call - cleared (no mileage)'}, true); toast('Test call cleared - no mileage row added'); close(); render(); return; }
       const m = S.mileage[v]; if (!m) { toast('Pick a unit'); return; }
-      const dec = v === 'A903'; if (dec && !/^\d{6}\.\d$/.test(end)) { toast('A903 needs tenths: 000000.0 (for example 166382.4)'); return; } if (!dec && !/^\d+$/.test(end)) { toast('Enter the ending reading'); return; }
-      const last = (m.rows || [])[m.rows.length - 1]; const beg = last ? last.end : '';
+      const dec = milDec(v); if (dec && !tenthsRe(v).test(end)) { toast(`${v} needs tenths, for example ${v === 'A903' ? '166382.4' : '12345.6'}`); return; } if (!dec && !/^\d+$/.test(end)) { toast('Enter the ending reading'); return; }
+      const last = (m.rows || [])[m.rows.length - 1]; const beg = last ? last.end : String((m.meta && m.meta.start) || '');
       const go = async () => {
         const saved = await save(); if (!saved) return;
         const d = new Date(); const t = saved.type || ''; const purpose = /fire|alarm|smoke|brush|grass/i.test(t) ? 'Fire - ' + t : /tree|line|service|hazard|storm|public/i.test(t) ? 'Service - ' + t : 'EMS - ' + t;
-        const row = {date: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`, beg, end, beg_h: last ? (last.end_h || '') : '', end_h: endh, purpose, comments: `CAD ${saved.cad} - ${t}`.trim(), initials: myInitials()};
+        const row = {date: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`, beg, end, beg_h: last ? (last.end_h || '') : String((S.mileage[v] && S.mileage[v].meta && S.mileage[v].meta.start_h) || ''), end_h: endh, purpose, comments: `CAD ${saved.cad} - ${t}`.trim(), initials: myInitials()};
         await addMileRow(v, row);
         const miss = []; if (!saved.unitcrew.some((u) => u.members.length)) miss.push('crew'); if (!saved.notes.trim()) miss.push('notes'); if (!saved.narrative.trim()) miss.push('narrative'); if (!saved.zone || saved.zone === '—') miss.push('zone');
         const upd = {cleared_at: nowISO(), cleared_miles: end}; if (saved.stage === 'Needs info') upd.needs = miss.length ? 'Cleared - needs ' + miss.join(', ') : 'Cleared - ready for narrative review';
@@ -1429,7 +1429,7 @@ body.bd-night .app{filter:brightness(.88)}
       const vehs = Object.keys(S.mileage).sort(); const pick = vehs.find((v) => onCall.includes(v)) || vehs.find((v) => mine.includes(v)) || vehs[0];
       const sel = el('select', {id: 'respVeh', 'aria-label': 'Unit'}, vehs.map((v) => el('option', {value: v, text: v, selected: v === pick})));
       const end = el('input', {type: 'text', id: 'respEnd', inputmode: 'decimal', placeholder: 'Ending reading'}); const endH = el('input', {type: 'text', id: 'respEndH', inputmode: 'numeric', placeholder: 'Ending hours'});
-      const info = el('p', {class: 'note'}); const sync = () => { const m = S.mileage[sel.value]; const last = m && (m.rows || [])[m.rows.length - 1]; info.textContent = `${sel.value === 'A903' ? 'A903 needs tenths (000000.0). ' : ''}${last ? 'Last reading ' + last.end + (last.end_h ? ' / ' + last.end_h + ' h' : '') : ''}`; endH.hidden = sel.value !== 'EG906'; };
+      const info = el('p', {class: 'note'}); const sync = () => { const m = S.mileage[sel.value]; const last = m && (m.rows || [])[m.rows.length - 1]; info.textContent = `${milDec(sel.value) ? sel.value + ' needs tenths (000000.0). ' : ''}${last ? 'Last reading ' + last.end + (last.end_h ? ' / ' + last.end_h + ' h' : '') : m && m.meta && m.meta.start ? 'Starts at ' + m.meta.start : ''}`; endH.hidden = !milHrs(sel.value); };
       sel.addEventListener('change', sync); sync();
       modal(el('div', {class: 'box', role: 'dialog', 'aria-label': 'Clear the call'}, el('h2', {text: `Clear call ${r.num}`}), el('div', {class: 'grid'}, el('label', {}, 'Unit', sel), el('label', {}, 'Ending reading', end), el('label', {}, 'Ending hours', endH)), info,
         el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn ghost', text: 'Cancel', onclick: closeModal}), el('button', {type: 'button', class: 'btn ghost', text: 'Clear without mileage', onclick: () => finish(null)}), el('button', {type: 'button', class: 'btn primary', text: 'Clear call', onclick: () => finish(sel.value)}))));
@@ -1437,12 +1437,12 @@ body.bd-night .app{filter:brightness(.88)}
         let row = null;
         if (r.test) v = null;
         if (v) {
-          const m = S.mileage[v]; const e = end.value.trim(); const dec = v === 'A903';
-          if (dec && !/^\d{6}\.\d$/.test(e)) { toast('A903 needs tenths: 000000.0'); return; } if (!dec && !/^\d+$/.test(e)) { toast('Enter the ending reading'); return; }
-          const last = (m.rows || [])[m.rows.length - 1]; const beg = last ? last.end : '';
+          const m = S.mileage[v]; const e = end.value.trim(); const dec = milDec(v);
+          if (dec && !tenthsRe(v).test(e)) { toast(`${v} needs tenths: 000000.0`); return; } if (!dec && !/^\d+$/.test(e)) { toast('Enter the ending reading'); return; }
+          const last = (m.rows || [])[m.rows.length - 1]; const beg = last ? last.end : String((m.meta && m.meta.start) || '');
           if (beg && Number(e) <= Number(beg)) { toast(`End ${e} is not higher than the last reading ${beg}`); return; }
           const d = new Date(); const t = r.type || ''; const purpose = /fire|alarm|smoke|brush|grass/i.test(t) ? 'Fire - ' + t : /tree|line|service|hazard|storm|public/i.test(t) ? 'Service - ' + t : 'EMS - ' + t;
-          row = {date: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`, beg, end: e, beg_h: last ? (last.end_h || '') : '', end_h: endH.value.trim(), purpose, comments: `CAD ${r.cad} - ${t}`.trim(), initials: myInitials()};
+          row = {date: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`, beg, end: e, beg_h: last ? (last.end_h || '') : String((S.mileage[v] && S.mileage[v].meta && S.mileage[v].meta.start_h) || ''), end_h: endH.value.trim(), purpose, comments: `CAD ${r.cad} - ${t}`.trim(), initials: myInitials()};
           await addMileRow(v, row);
         }
         closeModal();
@@ -1479,19 +1479,41 @@ body.bd-night .app{filter:brightness(.88)}
     if (!m.month) m.month = cur || ym;
     m.rows = (m.rows || []).concat([row]); await put('mileage/' + v, m); return m;
   }
+  const milDec = (v) => { const m = S.mileage[v]; return m && m.meta && 'tenths' in m.meta ? !!m.meta.tenths : v === 'A903'; };
+  const milHrs = (v) => { const m = S.mileage[v]; return m && m.meta && 'hours' in m.meta ? !!m.meta.hours : v === 'EG906'; };
+  const tenthsRe = (v) => v === 'A903' ? /^\d{6}\.\d$/ : /^\d+\.\d$/;
+  function openLogSettings(v) {
+    const isNew = !v; const m = v ? S.mileage[v] : null;
+    const free = Object.values(S.apparatus).map((a) => a.unit).filter((u) => u && !S.mileage[u]).sort();
+    if (isNew && !free.length) { toast('Every apparatus already has a mileage log'); return; }
+    const unit = el('select', {'aria-label': 'Apparatus', disabled: !isNew}, (isNew ? free : [v]).map((u) => el('option', {value: u, text: u})));
+    const ten = el('input', {type: 'checkbox', checked: m ? milDec(v) : false, style: 'width:22px;height:22px'}); const hrs = el('input', {type: 'checkbox', checked: m ? milHrs(v) : true, style: 'width:22px;height:22px'});
+    const st = el('input', {type: 'text', inputmode: 'decimal', value: (m && m.meta && m.meta.start) || '', placeholder: 'Odometer now'}); const sth = el('input', {type: 'text', inputmode: 'decimal', value: (m && m.meta && m.meta.start_h) || '', placeholder: 'Engine hours now'});
+    const kind = el('input', {type: 'text', value: (m && m.meta && m.meta.vehicle) || '', placeholder: 'Make / type (optional)'});
+    modal(el('div', {class: 'box', role: 'dialog', 'aria-label': 'Mileage log'}, el('h2', {text: isNew ? 'New vehicle mileage log' : `${v} log settings`}),
+      el('div', {class: 'grid'}, el('label', {class: 'span2'}, 'Apparatus', unit), el('label', {class: 'span2'}, 'Vehicle', kind), el('label', {class: 'span2'}, 'Starting reading', st), el('label', {class: 'span2'}, 'Starting engine hours', sth)),
+      el('label', {class: 'row', style: 'gap:10px;min-height:44px'}, ten, 'Readings in tenths (000000.0)'), el('label', {class: 'row', style: 'gap:10px;min-height:44px'}, hrs, 'Track engine hours'),
+      el('p', {class: 'note', text: 'The starting reading is used as the Begin of the first row. Rows from Clear call go here when this unit is picked.'}),
+      el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn ghost', text: 'Cancel', onclick: closeModal}), el('button', {type: 'button', class: 'btn primary', text: isNew ? 'Create log' : 'Save', onclick: async () => {
+        const u = unit.value; const meta = Object.assign({}, (m && m.meta) || {}, {vehicle_no: u, vehicle: kind.value.trim(), station: '93', tenths: ten.checked, hours: hrs.checked, start: st.value.trim(), start_h: sth.value.trim()});
+        if (meta.start && ten.checked && !tenthsRe(u).test(meta.start)) { toast('Starting reading needs tenths, like 12345.6'); return; }
+        const log = m ? Object.assign(m, {meta}) : {vehicle: u, page: 1, month: isoToday().slice(0, 7), rows: [], meta};
+        S.mileage[u] = log; await put('mileage/' + u, log); closeModal(); milV = u; milMonth = ''; store.set('milV', u); renderMileage(); toast(isNew ? `${u} mileage log created` : 'Saved');
+      }}))));
+  }
   let milV = store.get('milV', 'A903'), milMonth = '';
   function renderMileage() {
     const v = $('#v-mileage'); v.replaceChildren();
     const vehs = Object.keys(S.mileage).sort(); if (!vehs.length) { v.append(el('div', {class: 'empty', text: S.ready ? 'No mileage logs yet.' : 'Loading mileage…'})); return; }
     if (!S.mileage[milV]) milV = vehs[0];
-    const cur = S.mileage[milV]; const hrs = milV === 'EG906'; const dec = milV === 'A903';
+    const cur = S.mileage[milV]; const hrs = milHrs(milV); const dec = milDec(milV);
     const arch = Object.entries(S.mileage_archive || {}).filter(([k, x]) => (x.vehicle || k.split('-')[0]) === milV).map(([k, x]) => Object.assign({key: k}, x)).sort((a, b) => (Number(b.page) || 0) - (Number(a.page) || 0));
     const label = (x) => x.month ? monthName(x.month) : `Page ${x.page}${(x.rows || []).length ? ` (${x.rows[0].date} - ${x.rows[x.rows.length - 1].date})` : ''}`;
     const viewing = milMonth ? arch.find((x) => x.key === milMonth) : null; const m = viewing || cur; const rows = m.rows || []; const last = (cur.rows || [])[(cur.rows || []).length - 1];
     const diff = (r) => r && r.end !== '' && r.beg !== '' && r.end != null && r.beg != null ? Number(r.end) - Number(r.beg) : null;
     const miles = rows.reduce((t, r) => t + (diff(r) > 0 ? diff(r) : 0), 0); const hours = hrs ? rows.reduce((t, r) => t + (Number(r.end_h) - Number(r.beg_h) > 0 ? Number(r.end_h) - Number(r.beg_h) : 0), 0) : 0;
     const curName = monthName(logMonth(cur) || isoToday().slice(0, 7));
-    v.append(el('div', {class: 'row'}, vehs.map((x) => el('button', {type: 'button', class: 'chip' + (x === milV ? ' on' : ''), text: x, onclick: () => { milV = x; milMonth = ''; store.set('milV', x); renderMileage(); }})), el('span', {class: 'grow'}),
+    v.append(el('div', {class: 'row'}, vehs.map((x) => el('button', {type: 'button', class: 'chip' + (x === milV ? ' on' : ''), text: x, onclick: () => { milV = x; milMonth = ''; store.set('milV', x); renderMileage(); }})), el('button', {type: 'button', class: 'chip', text: '+ Vehicle log', onclick: () => openLogSettings(null)}), el('button', {type: 'button', class: 'link', text: 'Log settings', onclick: () => openLogSettings(milV)}), el('span', {class: 'grow'}),
       el('span', {class: 'pill', text: `${viewing ? label(viewing) : curName} · ${rows.length} row${rows.length === 1 ? '' : 's'} · ${dec ? miles.toFixed(1) : Math.round(miles)} mi${hrs ? ` · ${Math.round(hours)} h` : ''}`})));
     if (arch.length) v.append(el('div', {class: 'row', style: 'margin-top:8px'}, el('span', {class: 'note', text: 'Month:'}), el('button', {type: 'button', class: 'chip' + (!viewing ? ' on' : ''), text: `${curName} (current)`, onclick: () => { milMonth = ''; renderMileage(); }}),
       arch.slice(0, 12).map((x) => el('button', {type: 'button', class: 'chip' + (viewing && viewing.key === x.key ? ' on' : ''), text: label(x), onclick: () => { milMonth = x.key; renderMileage(); }}))));
@@ -1499,11 +1521,11 @@ body.bd-night .app{filter:brightness(.88)}
       const d = new Date(); const today = `${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}/${String(d.getFullYear()).slice(2)}`;
       const fi = {}; const mk = (k, ph, val, w) => { fi[k] = el('input', {type: 'text', placeholder: ph, value: val || '', inputmode: /beg|end/.test(k) ? 'decimal' : null}); return el('label', {class: w || ''}, ph, fi[k]); };
       v.append(el('details', {class: 'sec', style: 'margin-top:12px'}, el('summary', {}, el('b', {text: `Add a row - ${milV}`})), el('div', {class: 'grid', style: 'margin-top:10px'},
-        mk('date', 'Date', today), mk('beg', dec ? 'Begin (000000.0)' : 'Begin miles', last ? last.end : ''), mk('end', dec ? 'End (000000.0)' : 'End miles'), hrs ? mk('end_h', 'End hours') : el('span'),
+        mk('date', 'Date', today), mk('beg', dec ? 'Begin (000000.0)' : 'Begin miles', last ? last.end : String((cur.meta && cur.meta.start) || '')), mk('end', dec ? 'End (000000.0)' : 'End miles'), hrs ? mk('end_h', 'End hours') : el('span'),
         mk('purpose', 'Purpose', '', 'span2'), mk('comments', 'Comments', '', 'span2')), el('div', {class: 'row', style: 'margin-top:8px'}, el('button', {type: 'button', class: 'btn primary', text: 'Add row', onclick: async () => {
-          const row = {date: fi.date.value.trim(), beg: fi.beg.value.trim(), end: fi.end.value.trim(), beg_h: last ? (last.end_h || '') : '', end_h: fi.end_h ? fi.end_h.value.trim() : '', purpose: fi.purpose.value.trim(), comments: fi.comments.value.trim(), initials: myInitials()};
+          const row = {date: fi.date.value.trim(), beg: fi.beg.value.trim(), end: fi.end.value.trim(), beg_h: last ? (last.end_h || '') : String((S.mileage[v] && S.mileage[v].meta && S.mileage[v].meta.start_h) || ''), end_h: fi.end_h ? fi.end_h.value.trim() : '', purpose: fi.purpose.value.trim(), comments: fi.comments.value.trim(), initials: myInitials()};
           if (!/^\d\d\/\d\d\/\d\d$/.test(row.date)) { toast('Date looks like 11/26/26'); return; }
-          if (dec && (!/^\d{6}\.\d$/.test(row.beg) || !/^\d{6}\.\d$/.test(row.end))) { toast('A903 needs tenths: 000000.0'); return; }
+          if (dec && (!tenthsRe(milV).test(row.beg) || !tenthsRe(milV).test(row.end))) { toast(`${milV} needs tenths: 000000.0`); return; }
           if (!row.purpose) { toast('Add a purpose'); return; }
           const doIt = async () => { await addMileRow(milV, row); toast(`${milV} row added`); renderMileage(); };
           const probs = []; if (Number(row.end) <= Number(row.beg)) probs.push('End is not higher than begin.'); if (last && row.beg !== last.end) probs.push(`Begin ${row.beg} doesn't match the last end ${last.end}.`); if (Number(row.end) - Number(row.beg) > 200) probs.push('Over 200 miles in one row.');
