@@ -318,7 +318,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.8.0';
+  const APPV = '1.8.1';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -351,6 +351,8 @@ body:not(.locked) .gate{display:none}
   const markDirty = () => { dirty = true; store.set('dirty', true); };
   async function put(path, data, merge) {
     const i = path.indexOf('/'); const coll = path.slice(0, i), id = path.slice(i + 1);
+    const isTest = coll === 'reports' && ((data && data.test) || (S.reports[id] && S.reports[id].test));
+    if (isTest) { const map = S.reports; map[id] = merge && map[id] ? Object.assign(map[id], data) : Object.assign({}, data, {id}); persist(); return true; }   // test calls stay on this tablet
     if (coll === 'requests') outbox.push({at: nowISO(), kind: 'request', id: String(data.report || id), fields: Object.assign({label: data.label || data.action}, data), from: 'tablet'});
     else if (coll === 'servicelog') outbox.push({at: nowISO(), kind: 'servicelog', id, fields: data});
     else {
@@ -512,7 +514,7 @@ body:not(.locked) .gate{display:none}
   async function pushTablet(manual) {
     if (manual) cfg.sync_requested_at = nowISO();
     const payload = {exported_at: nowISO(), app: 'Station 93 Tablet', device: 'tablet', sync_requested_at: cfg.sync_requested_at || null, pending_count: outbox.length, changes: outbox,
-      snapshot: {reports: Object.values(S.reports), crew: Object.values(S.crew), apparatus: Object.values(S.apparatus), mileage: Object.values(S.mileage)}};
+      snapshot: {reports: Object.values(S.reports).filter((r) => !r.test), crew: Object.values(S.crew), apparatus: Object.values(S.apparatus), mileage: Object.values(S.mileage)}};
     const body = JSON.stringify(payload);
     if (!cfg.tabletFileId) { const ex = await find("name='to-claude-tablet.json'"); if (ex.length) cfg.tabletFileId = ex[0].id; }
     if (cfg.tabletFileId) {
@@ -542,9 +544,9 @@ body:not(.locked) .gate{display:none}
   const ageDays = (r) => { const t = Date.parse(r.date || ''); return isNaN(t) ? 0 : Math.floor((Date.now() - t) / 86400000); };
   function renderCalls() {
     const v = $('#v-calls'); v.replaceChildren();
-    const all = Object.values(S.reports);
+    const all = Object.values(S.reports).filter((r) => !r.test);
     if (!S.ready && !all.length) { v.append(el('div', {class: 'empty', text: 'No calls on this tablet yet. Open Settings, connect Google Drive, then tap Sync now.'})); return; }
-    const chips = el('div', {class: 'row'}, [['', 'All open'], ...STAGES.map((s) => [s, s]), ['Mine', 'Assigned to me']].map(([k, l]) => el('button', {type: 'button', class: 'chip' + (filter === k ? ' on' : ''), text: l, onclick: () => { filter = k; store.set('filter', k); renderCalls(); }})));
+    const chips = el('div', {class: 'row'}, [['', 'All open'], ...STAGES.map((s) => [s, s]), ['Mine', 'Assigned to me'], ['Tests', 'Tests']].map(([k, l]) => el('button', {type: 'button', class: 'chip' + (filter === k ? ' on' : ''), text: l, onclick: () => { filter = k; store.set('filter', k); renderCalls(); }})));
     const search = el('input', {type: 'search', id: 'q', placeholder: 'Search CAD, street, type…', value: q, 'aria-label': 'Search calls'}); search.addEventListener('input', () => { q = search.value; renderList(); });
     const tiles = el('div', {class: 'tiles'}, ['Needs info', 'Awaiting C9', 'Ready to Complete', 'Blocked'].map((s) => { const n = all.filter((r) => r.stage === s).length; return el('button', {type: 'button', class: 'tile' + (s === 'Ready to Complete' && n ? ' hot' : ''), onclick: () => { filter = s; renderCalls(); }}, el('b', {class: 'c-' + CLS[s], text: String(n)}), el('span', {text: s})); }));
     const rb = respondBar(); if (rb) v.append(rb);
@@ -556,7 +558,7 @@ body:not(.locked) .gate{display:none}
   function renderList() {
     const ql = q.toLowerCase();
     const rows = Object.values(S.reports).sort((a, b) => (b.num || 0) - (a.num || 0)).filter((r) => {
-      if (filter === 'Mine') { if (!(r.assigned_to === ME && OPEN.includes(r.stage))) return false; } else if (filter) { if (r.stage !== filter) return false; } else if (!OPEN.includes(r.stage)) return false;
+      if (filter === 'Tests') { if (!r.test) return false; } else if (r.test) return false; else if (filter === 'Mine') { if (!(r.assigned_to === ME && OPEN.includes(r.stage))) return false; } else if (filter) { if (r.stage !== filter) return false; } else if (!OPEN.includes(r.stage)) return false;
       return !ql || [r.cad, r.type, r.area, r.units, r.needs, r.num].join(' ').toLowerCase().includes(ql);
     });
     for (const id of [...picked]) if (!rows.some((r) => r.id === id)) picked.delete(id);
@@ -568,7 +570,7 @@ body:not(.locked) .gate{display:none}
       const cb = el('input', {type: 'checkbox', 'aria-label': `Select ${r.num}`, checked: picked.has(r.id)}); cb.addEventListener('click', (e) => e.stopPropagation()); cb.addEventListener('change', () => { cb.checked ? picked.add(r.id) : picked.delete(r.id); renderBulk(); });
       list.append(el('div', {class: 'call b-' + cls, role: 'button', tabindex: '0', onclick: () => openCall(r.id), onkeydown: (e) => { if (e.key === 'Enter') openCall(r.id); }},
         el('label', {class: 'pick', onclick: (e) => e.stopPropagation()}, cb),
-        el('div', {class: 'num'}, String(r.num || r.id), el('small', {text: fmtDate(r.date)})),
+        el('div', {class: 'num'}, r.test ? 'TEST' : String(r.num || r.id), el('small', {text: r.test ? (r.cad === 'TESTREPORT' ? '#1' : '#' + r.cad.split('-')[1]) : fmtDate(r.date)})),
         el('div', {class: 'what'}, el('b', {text: r.type || 'Call'}), el('div', {class: 'meta', text: [r.area, r.zone && r.zone !== '—' ? r.zone : '', r.oic ? 'OIC ' + r.oic : '', nt ? ntLabel(nt) : ''].filter(Boolean).join(' · ')})),
         el('div', {class: 'right'}, el('span', {class: 'pill c-' + cls, text: r.stage || '—'}), el('div', {class: 'needs'}, r.needs || '', old ? el('span', {class: 'age', text: ` ${ageDays(r)} days`}) : null))));
     }
@@ -641,13 +643,15 @@ body:not(.locked) .gate{display:none}
     const nextNum = Math.max(0, ...Object.values(S.reports).map((r) => r.num || 0)) + 1;
     const r = JSON.parse(JSON.stringify(orig || {id: null, num: nextNum, cad: `2026-${String(nextNum).padStart(8, '0')}`, date: new Date().toISOString().slice(0, 10), stage: 'Needs info', needs: 'Crew, notes, narrative', oic: lastName(ME), assigned_to: ME, unitcrew: [], district: 'ARGYLE'}));
     let unitcrew = Array.isArray(r.unitcrew) ? r.unitcrew : [];
+    const nextTest = () => { let n = 1; const used = new Set(Object.values(S.reports).filter((x) => x.test).map((x) => x.cad)); while (used.has(n === 1 ? 'TESTREPORT' : 'TESTREPORT-' + n)) n++; return n === 1 ? 'TESTREPORT' : 'TESTREPORT-' + n; };
+    if (!orig && filter === 'Tests') { r.test = true; r.cad = nextTest(); r.needs = 'Test call'; }
     let locOpen = !(r.area || r.la), statusOpen = false;
     const f = {}; // inputs
     const inp = (k, attrs) => { const i = el('input', Object.assign({type: 'text', id: 'f-' + k, value: r[k] == null ? '' : r[k]}, attrs || {})); f[k] = i; return i; };
     const host = $('#sheetHost'); host.replaceChildren();
     const body = el('div', {class: 'wrap'});
     const sheet = el('div', {class: 'sheet', role: 'dialog', 'aria-label': 'Call'},
-      el('div', {class: 'bar'}, el('button', {type: 'button', class: 'btn ghost', text: '← Calls', onclick: close}), el('h2', {text: orig ? `Call ${r.num}` : 'New call'}), el('span', {class: 'grow'}), orig ? el('button', {type: 'button', class: 'btn primary', text: 'Respond', onclick: () => { close(); openResponse(orig.id); }}) : null, el('span', {class: 'pill c-' + (CLS[r.stage] || 'done'), text: r.stage})),
+      el('div', {class: 'bar'}, el('button', {type: 'button', class: 'btn ghost', text: '← Calls', onclick: close}), el('h2', {text: orig ? (orig.test ? `Test call ${orig.cad}` : `Call ${r.num}`) : 'New call'}), el('span', {class: 'grow'}), orig ? el('button', {type: 'button', class: 'btn primary', text: 'Respond', onclick: () => { close(); openResponse(orig.id); }}) : null, el('span', {class: 'pill c-' + (CLS[r.stage] || 'done'), text: r.stage})),
       el('div', {class: 'body'}, body),
       el('div', {class: 'foot'}, el('button', {type: 'button', class: 'btn ghost', text: 'Close', onclick: close}), el('button', {type: 'button', class: 'btn primary', text: 'Save', onclick: () => save()})));
     host.append(sheet); document.body.style.overflow = 'hidden';
@@ -655,7 +659,9 @@ body:not(.locked) .gate{display:none}
 
     // Call basics
     body.append(el('div', {class: 'sec'}, el('h3', {text: 'Call'}), el('div', {class: 'grid'},
-      el('label', {}, 'CAD #', inp('cad', {inputmode: 'numeric'})), el('label', {}, 'Date', inp('date', {type: 'date'})), el('label', {class: 'span2'}, 'Dispatch call type', inp('type', {placeholder: 'Fall (17B02)'})))));
+      !orig ? el('label', {class: 'span4 row', style: 'gap:10px;min-height:var(--tap);flex-direction:row;align-items:center;font-size:15px;color:var(--fg)'}, (() => { const t = el('input', {type: 'checkbox', id: 'f-test', checked: !!r.test, style: 'width:24px;height:24px'}); t.addEventListener('change', () => { r.test = t.checked; f.cad.value = t.checked ? nextTest() : `2026-${String(nextNum).padStart(8, '0')}`; f.needs.value = t.checked ? 'Test call' : 'Crew, notes, narrative'; testNote.hidden = !t.checked; }); return t; })(), el('span', {}, el('b', {text: 'Test call'}), ' - practice only: stays on this tablet, never synced, no mileage, never sent to Claude')) : (r.test ? el('p', {class: 'span4 note', style: 'color:var(--warn);font-weight:600', text: 'TEST CALL - stays on this tablet only. Not synced, no mileage row, never sent to Claude.'}) : null),
+      el('label', {}, 'CAD #', inp('cad', {inputmode: 'text'})), el('label', {}, 'Date', inp('date', {type: 'date'})), el('label', {class: 'span2'}, 'Dispatch call type', inp('type', {placeholder: 'Fall (17B02)'})))));
+    const testNote = el('p', {class: 'note', style: 'color:var(--warn)', hidden: !r.test || !!orig, text: 'Test calls are kept apart from real calls - find them under the Tests filter.'}); body.append(testNote);
     // NERIS incident types
     const ntp = picker({title: 'Incident types', note: 'Up to 3, the first is primary. Same list as FireWorks.', cats: NT.cats, items: NT.types, multi: true, value: r.ntypes, label: ntLabel,
       groupOf: (c) => c.split('@@').slice(0, 2).join('@@'), groupLabel: (g, qs) => { const [c, gg] = g.split('@@'); return (qs ? NT.cats[c] + ' > ' : '') + (NT.groups[gg] || gg); },
@@ -732,8 +738,10 @@ body:not(.locked) .gate{display:none}
     if ((r.history || []).length) body.append(el('details', {class: 'sec'}, el('summary', {}, el('b', {text: 'Change history'})), el('ul', {class: 'hist'}, r.history.slice().reverse().map((h) => el('li', {}, el('b', {text: `${fmtWhen(h.at)} · ${h.by}: `}), (h.items || []).join(' · '))))));
 
     function collect() {
-      const cad = f.cad.value.trim(); if (!/^2026-\d{8}$/.test(cad)) { toast('CAD # must look like 2026-00000957'); return null; }
-      const num = Number(cad.slice(-3)); const rid = r.id || String(num);
+      const cad = f.cad.value.trim().toUpperCase();
+      if (r.test) { if (!/^TESTREPORT(-\d+)?$/.test(cad)) { toast('A test call number looks like TESTREPORT or TESTREPORT-2'); return null; } }
+      else if (!/^2026-\d{8}$/.test(cad)) { toast('CAD # must look like 2026-00000957'); return null; }
+      const num = r.test ? 0 : Number(cad.slice(-3)); const rid = r.id || (r.test ? cad.toLowerCase() : String(num));
       if (!r.id && S.reports[rid]) { toast(`CAD ${num} already exists - open it from the list`); return null; }
       const zone = f.zone.value.trim().toUpperCase(); const dist = f.district.value;
       const others = units(f.others.value);
@@ -750,7 +758,7 @@ body:not(.locked) .gate{display:none}
       const diff = orig ? Object.keys(L).filter((k) => JSON.stringify(orig[k] ?? '') !== JSON.stringify(n[k] ?? '')) : ['created'];
       const val = (k) => k === 'ntypes' ? n.ntypes.map(ntLabel).join(' + ') : k === 'loc' ? ltLabel(n.loc) : n[k];
       const items = diff.map((k) => k === 'created' ? 'created on the tablet' : ['narrative', 'notes'].includes(k) ? L[k] + ' edited' : `${L[k]} → ${val(k) || '—'}`);
-      Object.assign(n, extra || {}); n._mod = nowISO(); n._by = 'tablet';
+      Object.assign(n, extra || {}); if (r.test) n.test = true; n._mod = nowISO(); n._by = 'tablet';
       n.history = (orig && orig.history || []).concat(items.length ? [{at: nowISO(), by: 'You (tablet)', items}] : []).slice(-40);
       n.requests = (extra && extra.requests) || r.requests || [];
       if (orig && orig.narrative_draft_pending && n.narrative.trim()) { n.narrative_draft_pending = false; n.requests = n.requests.concat([{action: 'stage_email', label: 'Stage the report email (draft only)', at: nowISO(), status: 'queued', send_approved: !!orig.send_approved}]); await queue(n, 'stage_email', 'Narrative reviewed on the tablet', {send_approved: !!orig.send_approved}); }
@@ -759,6 +767,7 @@ body:not(.locked) .gate{display:none}
       toast(`Saved ${n.num}`); return S.reports[n.id];
     }
     async function clearCall(v, end, endh) {
+      if (r.test) { const saved = await save(); if (!saved) return; await put('reports/' + saved.id, {cleared_at: nowISO(), needs: 'Test call - cleared (no mileage)'}, true); toast('Test call cleared - no mileage row added'); close(); render(); return; }
       const m = S.mileage[v]; if (!m) { toast('Pick a unit'); return; }
       const dec = v === 'A903'; if (dec && !/^\d{6}\.\d$/.test(end)) { toast('A903 needs tenths: 000000.0 (for example 166382.4)'); return; } if (!dec && !/^\d+$/.test(end)) { toast('Enter the ending reading'); return; }
       if ((m.rows || []).length >= 16) { toast(`${v} page is full - start a new page on the Mileage tab`); return; }
@@ -778,6 +787,7 @@ body:not(.locked) .gate{display:none}
     }
     function okToComplete() {
       const n = collect(); if (!n) return; const again = !!okToComplete.force;
+      if (r.test) { toast('Test calls are never sent to Claude - nothing to complete'); return; }
       const prior = (r.requests || []).filter((q) => q.action === 'review_complete' && q.status !== 'done' && q.status !== 'cancelled').pop();
       const staged = /draft staged|awaiting|ready to complete|completed/i.test(r.stage || '') || r.email_sent;
       if ((prior || staged) && !again) {
@@ -806,6 +816,7 @@ body:not(.locked) .gate{display:none}
     }
   }
   async function queue(r, action, note, extra) {
+    if (r.test) return;
     const id = `${r.id}-${action}-${Date.now()}`;
     await put('requests/' + id, Object.assign({report: r.id, cad: r.cad, action, note: note || '', status: 'queued', at: nowISO(), from: 'tablet'}, extra || {}));
   }
@@ -865,6 +876,7 @@ body:not(.locked) .gate{display:none}
         el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn ghost', text: 'Cancel', onclick: closeModal}), el('button', {type: 'button', class: 'btn ghost', text: 'Clear without mileage', onclick: () => finish(null)}), el('button', {type: 'button', class: 'btn primary', text: 'Clear call', onclick: () => finish(sel.value)}))));
       async function finish(v) {
         let row = null;
+        if (r.test) v = null;
         if (v) {
           const m = S.mileage[v]; const e = end.value.trim(); const dec = v === 'A903';
           if (dec && !/^\d{6}\.\d$/.test(e)) { toast('A903 needs tenths: 000000.0'); return; } if (!dec && !/^\d+$/.test(e)) { toast('Enter the ending reading'); return; }
@@ -1031,7 +1043,7 @@ body:not(.locked) .gate{display:none}
     if (G.north) path(G.north, true, {fill: 'none', stroke: 'var(--blue)', 'stroke-dasharray': '6 5', 'stroke-width': 1.4});
     path(G.district, true, {fill: 'none', stroke: 'var(--fg)', 'stroke-width': 2.4});
     const rr = (n) => String(n * mview.w / W);
-    for (const r of Object.values(S.reports).filter((x) => x.la && x.lo && OPEN.includes(x.stage))) { const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', X(r.lo)); c.setAttribute('cy', Y(r.la)); c.setAttribute('r', rr(9)); c.setAttribute('fill', ZC(r.zone)); c.setAttribute('stroke', 'var(--panel)'); c.setAttribute('stroke-width', rr(2)); c.dataset.id = r.id; svg.appendChild(c); }
+    for (const r of Object.values(S.reports).filter((x) => !x.test && x.la && x.lo && OPEN.includes(x.stage))) { const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', X(r.lo)); c.setAttribute('cy', Y(r.la)); c.setAttribute('r', rr(9)); c.setAttribute('fill', ZC(r.zone)); c.setAttribute('stroke', 'var(--panel)'); c.setAttribute('stroke-width', rr(2)); c.dataset.id = r.id; svg.appendChild(c); }
     if (mapMarker) { const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', X(mapMarker[1])); c.setAttribute('cy', Y(mapMarker[0])); c.setAttribute('r', rr(11)); c.setAttribute('fill', 'none'); c.setAttribute('stroke', 'var(--accent)'); c.setAttribute('stroke-width', rr(3.5)); svg.appendChild(c); }
     box.append(svg, el('div', {class: 'mapctl'}, el('button', {type: 'button', 'aria-label': 'Zoom in', text: '+', onclick: () => zoomBy(0.65)}), el('button', {type: 'button', 'aria-label': 'Zoom out', text: '−', onclick: () => zoomBy(1.5)}), el('button', {type: 'button', 'aria-label': 'Reset map', text: '⟲', onclick: () => { mview = {x: 0, y: 0, w: W, h: H}; drawMap(); }})));
     function zoomBy(fct, cx, cy) { cx = cx ?? mview.x + mview.w / 2; cy = cy ?? mview.y + mview.h / 2; const nw = Math.min(W, Math.max(W / 14, mview.w * fct)); const k = nw / mview.w; mview = {x: cx - (cx - mview.x) * k, y: cy - (cy - mview.y) * k, w: nw, h: nw * H / W}; drawMap(); }
@@ -1057,7 +1069,7 @@ body:not(.locked) .gate{display:none}
   function renderStats() {
     const v = $('#v-stats'); v.replaceChildren(); const all = Object.values(S.reports);
     const years = [...new Set(all.map((r) => (r.date || '').slice(0, 4)).filter(Boolean))].sort().reverse();
-    const R = all.filter((r) => !statYear || (r.date || '').startsWith(statYear));
+    const R = all.filter((r) => !r.test).filter((r) => !statYear || (r.date || '').startsWith(statYear));
     const by = (fn) => R.reduce((o, r) => { const k = fn(r) || '—'; o[k] = (o[k] || 0) + 1; return o; }, {});
     const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; const month = {}; R.forEach((r) => { const m = Number((r.date || '').slice(5, 7)); if (m) { const k = String(m).padStart(2, '0'); month[k] = (month[k] || 0) + 1; } });
     const mk = Object.keys(month).sort(); const mmax = Math.max(1, ...Object.values(month));
