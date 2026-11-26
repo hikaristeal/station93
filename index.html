@@ -227,6 +227,7 @@ body:not(.locked) .gate{display:none}
 .svc.lockb{display:inline-flex;align-items:center;gap:6px}.svc.lockb svg{width:18px;height:18px}
 .userlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.userlist li{display:flex;align-items:center;gap:8px;min-height:44px;border-bottom:1px solid var(--line)}
 /* v2.1 */
+.crewpicks{display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow:auto}.crewpick{border:1px solid var(--line);border-radius:var(--r);padding:4px 10px}
 .steps{display:flex;gap:3px;margin-top:6px;max-width:220px}.steps i{flex:1;height:6px;border-radius:3px;background:var(--line)}.steps i.on{background:var(--ok)}
 .steps.big{max-width:none;gap:6px;margin:0}.steps.big span{flex:1;display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted);text-align:center}.steps.big span i{height:8px;border-radius:4px;background:var(--line);display:block}.steps.big span.on{color:var(--fg)}.steps.big span.on i{background:var(--ok)}
 .reppill{color:var(--blue);font-weight:600}
@@ -341,7 +342,7 @@ body.bd-night .app{filter:brightness(.88)}
 <script>
 (function () {
   'use strict';
-  const APPV = '2.1.0';
+  const APPV = '2.2.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -1186,12 +1187,12 @@ body.bd-night .app{filter:brightness(.88)}
       const add = el('select', {'aria-label': 'Add a department unit', style: 'width:auto'}, el('option', {value: '', text: '+ Add unit'}), deptUnits().filter((u) => !unitcrew.some((x) => x.unit === u)).sort().map((u) => el('option', {value: u, text: u})));
       add.addEventListener('change', () => { if (!add.value) return; const u = {unit: add.value, members: []}; const me = Object.values(S.crew).find((c) => c.name === ME); if (me && units(me.assigned).includes(add.value)) u.members.push(ME); unitcrew.push(u); drawUnits(); });
       const me = Object.values(S.crew).find((c) => c.name === ME); const mine = units(me && me.assigned);
-      ucSec.replaceChildren(el('h3', {}, 'Units & crew', el('span', {class: 'grow'}), add),
+      ucSec.replaceChildren(...[el('h3', {}, 'Units & crew', el('span', {class: 'grow'}), el('button', {type: 'button', class: 'btn', text: 'Add from crew assignments', onclick: () => crewPicker(r, unitcrew, {onDone: (pk) => { unitcrew = mergeCrew(unitcrew, pk); r.crew_import_done = true; drawUnits(); toast('Added - press Save to keep it'); }})}), add),
         mine.length ? el('div', {class: 'row'}, el('span', {class: 'note', text: 'Usual:'}), mine.map((u) => el('button', {type: 'button', class: 'opt', text: `${u}: me`, onclick: () => { let x = unitcrew.find((y) => y.unit === u); if (!x) { x = {unit: u, members: []}; unitcrew.push(x); } if (!x.members.includes(ME)) x.members.push(ME); drawUnits(); }}))) : null,
         unitcrew.length ? el('div', {}, unitcrew.map((u, i) => { const s = el('select', {'aria-label': 'Add a member to ' + u.unit}, el('option', {value: '', text: '+ Add member'}), Object.values(S.crew).filter((c) => !u.members.includes(c.name)).sort((a, b) => a.name.localeCompare(b.name)).map((c) => el('option', {value: c.name, text: c.name + (c.number && c.number !== '—' ? ` (#${c.number})` : '')}))); s.addEventListener('change', () => { if (s.value) { u.members.push(s.value); drawUnits(); } });
           return el('div', {class: 'unit'}, el('button', {type: 'button', class: 'unitchip', title: 'Remove unit', text: u.unit + ' ×', onclick: () => { unitcrew.splice(i, 1); drawUnits(); }}), u.members.map((m) => el('button', {type: 'button', class: 'member', title: 'Remove', text: m + ' ×', onclick: () => { u.members = u.members.filter((x) => x !== m); drawUnits(); }})), s); })) : el('p', {class: 'note', text: 'No units yet - add one above.'}),
         el('div', {class: 'grid'}, el('label', {class: 'span2'}, "Other agencies' units", inp('others', {value: units(r.units).filter((x) => !deptUnits().includes(x)).join(', '), placeholder: 'MD4'})), el('label', {}, 'OIC', inp('oic')),
-          el('label', {}, 'Assigned to', (() => { const s = el('select', {id: 'f-assigned'}, el('option', {value: '', text: 'Unassigned'}), Object.values(S.crew).sort((a, b) => a.name.localeCompare(b.name)).map((c) => el('option', {value: c.name, text: c.name, selected: r.assigned_to === c.name}))); f.assigned_to = s; return s; })())));
+          el('label', {}, 'Assigned to', (() => { const s = el('select', {id: 'f-assigned'}, el('option', {value: '', text: 'Unassigned'}), Object.values(S.crew).sort((a, b) => a.name.localeCompare(b.name)).map((c) => el('option', {value: c.name, text: c.name, selected: r.assigned_to === c.name}))); f.assigned_to = s; return s; })()))].filter(Boolean));
     }
     drawUnits();
     // Status (locked)
@@ -1330,6 +1331,31 @@ body.bd-night .app{filter:brightness(.88)}
     await put('requests/' + id, Object.assign({report: r.id, cad: r.cad, action, note: note || '', status: 'queued', at: nowISO(), from: 'tablet'}, extra || {}));
   }
 
+  // ----- crew import: the apparatus a member is assigned to, and its assigned crew, go onto a call after a confirm -----
+  const crewTextOf = (uc) => uc.map((u) => `${u.unit}: ${u.members.length ? u.members.map((m) => { const c = Object.values(S.crew).find((x) => x.name === m); return c && c.number && c.number !== '—' ? `${m} (#${c.number})` : m; }).join(' + ') : '(no crew)'}`).join('; ');
+  function crewOnUnit(unit) { return Object.values(S.crew).filter((c) => units(c.assigned).includes(unit)).sort((a, b) => (b.name === ME) - (a.name === ME) || a.name.localeCompare(b.name)); }
+  function mergeCrew(uc, picks) { const out = JSON.parse(JSON.stringify(uc || [])); for (const p2 of picks) { let x = out.find((y) => y.unit === p2.unit); if (!x) { x = {unit: p2.unit, members: []}; out.push(x); } for (const m of p2.members) if (!x.members.includes(m)) x.members.push(m); } return out; }
+  // opts: {title, onDone(picks) , onSkip()}
+  function crewPicker(r, uc, opts) {
+    const meC = Object.values(S.crew).find((c) => c.name === ME); const mine = units(meC && meC.assigned);
+    const onCall = (uc || []).map((u) => u.unit).concat(units(r.units));
+    const cand = Object.values(S.apparatus).map((a) => a.unit).filter((u) => u && crewOnUnit(u).length).sort((a, b) => (mine.includes(b) - mine.includes(a)) || (onCall.includes(b) - onCall.includes(a)) || a.localeCompare(b));
+    if (!cand.length) { toast('Nobody is assigned to an apparatus yet - assign crew on the Crew tab'); if (opts.onSkip) opts.onSkip(); return; }
+    const myPick = mine.filter((u) => cand.includes(u)).sort((a, b) => crewOnUnit(b).length - crewOnUnit(a).length || mine.indexOf(a) - mine.indexOf(b))[0];   // the apparatus with the most assigned crew, then the first one listed
+    const first = cand.find((u) => onCall.includes(u) && mine.includes(u)) || myPick || cand.find((u) => onCall.includes(u));
+    const rows = (first ? [first, ...cand.filter((u) => u !== first)] : cand).map((u) => {
+      const ucb = el('input', {type: 'checkbox', checked: u === first, style: 'width:24px;height:24px', 'aria-label': 'Add ' + u});
+      const ms = crewOnUnit(u).map((c) => { const out = c.status === 'Out of service'; const cb = el('input', {type: 'checkbox', checked: u === first && !out, style: 'width:22px;height:22px'}); cb.addEventListener('change', () => { if (cb.checked) ucb.checked = true; }); return {c, cb, el: el('label', {class: 'row', style: 'gap:8px;min-height:44px;padding-left:34px'}, cb, `${c.name}${c.number && c.number !== '—' ? ' #' + c.number : ''}`, out ? el('span', {class: 'note', text: ' (out of service)'}) : null)}; });
+      ucb.addEventListener('change', () => { if (ucb.checked && !ms.some((m) => m.cb.checked)) ms.forEach((m) => { if (m.c.status !== 'Out of service') m.cb.checked = true; }); if (!ucb.checked) ms.forEach((m) => { m.cb.checked = false; }); });
+      return {u, ucb, ms, el: el('div', {class: 'crewpick'}, el('label', {class: 'row', style: 'gap:10px;min-height:48px'}, ucb, el('b', {class: 'unitchip', style: 'display:inline-grid;place-items:center;padding:0 10px', text: u}), mine.includes(u) ? el('span', {class: 'note', text: 'your apparatus'}) : null, onCall.includes(u) ? el('span', {class: 'note', text: 'on the dispatch'}) : null), ms.map((m) => m.el))};
+    });
+    const picks = () => rows.filter((x) => x.ucb.checked).map((x) => ({unit: x.u, members: x.ms.filter((m) => m.cb.checked).map((m) => m.c.name)}));
+    modal(el('div', {class: 'box', role: 'dialog', 'aria-label': 'Add apparatus and crew'}, el('h2', {text: opts.title || `Crew for call ${r.num || ''}`}),
+      el('p', {class: 'note', text: 'From the Crew tab assignments. Tick the apparatus that responded and who was on it - it is added to the call\'s Units & crew.'}),
+      el('div', {class: 'crewpicks'}, rows.map((x) => x.el)),
+      el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn ghost', text: 'Skip', onclick: () => { closeModal(); if (opts.onSkip) opts.onSkip(); }}), el('button', {type: 'button', class: 'btn primary', text: 'Add to call', onclick: () => { const pk = picks(); if (!pk.length) { toast('Tick an apparatus, or tap Skip'); return; } closeModal(); opts.onDone(pk); }}))));
+  }
+
   // ---------- response mode: big call screen, one-tap times, quick notes, clear with mileage ----------
   const STAMPS = [['enroute', 'En route'], ['onscene', 'On scene'], ['ptcontact', 'Patient contact'], ['cleared', 'Clear']];
   const hhmm = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
@@ -1355,6 +1381,9 @@ body.bd-night .app{filter:brightness(.88)}
     $('#respHost') && $('#respHost').remove();
     const host = el('div', {class: 'resp', id: 'respHost', role: 'dialog', 'aria-label': 'Response mode'}); document.body.append(host);
     const save = async (f, msg) => { f._mod = nowISO(); f._by = 'tablet'; Object.assign(r, f); await put('reports/' + id, f, true); if (msg) toast(msg); draw(); };
+    if (!r.crew_import_done && !(r.unitcrew || []).some((u) => (u.members || []).length)) setTimeout(() => crewPicker(r, r.unitcrew, {
+      onDone: async (pk) => { const uc = mergeCrew(r.unitcrew, pk); const deps = Object.values(S.apparatus).map((a) => a.unit).concat(['AVFD', 'POV']); const others = units(r.units).filter((x) => !deps.includes(x)); const f2 = {unitcrew: uc, units: [...new Set(uc.map((u) => u.unit).concat(units(r.units)).concat(others))].join(', '), crew: crewTextOf(uc), crew_import_done: true, history: (r.history || []).concat([{at: nowISO(), by: 'You (response)', items: ['Crew added from apparatus assignments: ' + crewTextOf(pk)]}]).slice(-40)}; await save(f2, 'Crew added: ' + pk.map((p2) => p2.unit).join(', ')); },
+      onSkip: () => save({crew_import_done: true})}), 250);
     function draw() {
       const resp = r.resp || {};
       const note = el('textarea', {id: 'respNote', placeholder: 'Quick note - what you see, what you did (no patient names)', rows: '2'});
@@ -1366,6 +1395,7 @@ body.bd-night .app{filter:brightness(.88)}
         el('div', {class: 'rbody'},
           r.test ? el('p', {class: 'note', style: 'color:var(--warn);font-weight:600;font-size:15px', text: 'Practice run - times and notes stay on this tablet. Clear adds no mileage and does not change your service status.'}) : null,
           el('div', {class: 'rcall'}, el('b', {text: r.type || 'Call'}), el('span', {text: [r.area, r.zone && r.zone !== '—' ? r.zone : '', r.units].filter(Boolean).join(' · ')})),
+          el('div', {class: 'row'}, el('span', {class: 'note', style: 'font-size:15px', text: (r.unitcrew || []).some((u) => (u.members || []).length) ? 'Crew: ' + crewTextOf(r.unitcrew) : 'No crew on this call yet'}), el('button', {type: 'button', class: 'btn', text: 'Add crew', onclick: () => crewPicker(r, r.unitcrew, {onDone: async (pk) => { const uc = mergeCrew(r.unitcrew, pk); await save({unitcrew: uc, units: [...new Set(uc.map((u) => u.unit).concat(units(r.units)))].join(', '), crew: crewTextOf(uc), crew_import_done: true, history: (r.history || []).concat([{at: nowISO(), by: 'You (response)', items: ['Crew added from apparatus assignments: ' + crewTextOf(pk)]}]).slice(-40)}, 'Crew added'); }})})),
           (() => { const an = DEK ? addrNoteFor(r.la, r.lo) : null; const k = repeatsOf(r).length; return an || k >= 2 ? el('div', {class: 'addrnote', style: 'font-size:17px'}, an ? el('div', {}, el('b', {text: 'Address note: '}), an.a.text) : null, k >= 2 ? el('div', {text: `Repeat address - ${k} other calls here in 90 days`}) : null) : null; })(),
           el('div', {class: 'rstamps'}, STAMPS.map(([k, label]) => el('button', {type: 'button', class: 'rstamp' + (k === 'cleared' ? ' clear' : '') + (resp[k] ? ' set' : ''), onclick: () => {
             if (k === 'cleared') { clearFromResponse(); return; }
