@@ -170,6 +170,25 @@ textarea{padding:10px 12px;min-height:120px;resize:vertical;line-height:1.45}
 .pad{display:grid;grid-template-columns:repeat(3,84px);gap:12px}
 .pad button{height:84px;border-radius:50%;border:1px solid var(--line);background:var(--panel);font:600 30px var(--display)}
 .lock .err{color:var(--bad);min-height:20px}
+/* response mode */
+.resp{position:fixed;inset:0;z-index:35;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.resp .rtop{display:flex;align-items:center;gap:10px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));background:var(--accent);color:#fff}
+.resp .rtop h2{margin:0;font:700 22px/1.1 var(--display);flex:1;min-width:0}
+.resp .rtop button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:10px;min-height:44px;padding:0 14px;font-weight:600}
+.resp .rbody{flex:1;overflow-y:auto;padding:14px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px;max-width:900px;width:100%;margin:0 auto}
+.rcall b{display:block;font:700 30px/1.1 var(--display)}.rcall span{font-size:18px;color:var(--muted)}
+.rstamps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.rstamp{min-height:92px;border-radius:14px;border:2px solid var(--line);background:var(--panel);font:700 22px/1.1 var(--display);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.rstamp small{font:600 15px var(--body);color:var(--muted)}
+.rstamp.set{background:var(--ok);border-color:var(--ok);color:#fff}.rstamp.set small{color:#e6f5ec}
+.rstamp.clear{border-color:var(--accent);color:var(--accent)}.rstamp.clear.set{background:var(--accent);color:#fff}
+.rnote{display:flex;gap:8px;align-items:stretch}.rnote textarea{min-height:70px;font-size:17px}
+.rnote .btn{min-width:84px}
+.rlog{margin:0;padding-left:18px;font-size:15px;display:flex;flex-direction:column;gap:3px}
+.respbar{position:sticky;top:0;z-index:6;display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--accent);color:#fff;border-radius:var(--r);padding:10px 14px;margin-bottom:12px}
+.respbar b{font:700 18px var(--display)}.respbar .grow{flex:1}.respbar button{min-height:44px;border-radius:10px;border:0;padding:0 16px;font-weight:700}
+.respbar .go{background:#fff;color:var(--accent)}.respbar .x{background:rgba(255,255,255,.2);color:#fff}
+@media (max-width:640px){.rstamp{min-height:80px;font-size:20px}}
 /* sign-in (ported from the PC app) */
 body.locked>*:not(#gate){visibility:hidden}
 .gate{position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:#1e1e20 url(splash.jpg) center/contain no-repeat;color:#fff;transition:background-position .6s ease}
@@ -299,7 +318,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.7.0';
+  const APPV = '1.8.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -405,7 +424,8 @@ body:not(.locked) .gate{display:none}
   const NK = {call: 'New calls', approval: 'Approvals and Ready to Complete', claude: "Claude's work (narratives, OK to Complete results)", other: 'Other updates (stage changes, mileage, notices)'};
   const nset = () => Object.assign({on: false, details: true, call: true, approval: true, claude: true, other: false}, store.get('notify', {}));
   let pops = [];
-  function pop(kind, title, body, id) { pops.push({kind, title, body, id}); }
+  function pop(kind, title, body, id) { pops.push({kind, title, body, id}); if (kind === 'call' && id && cfg.notify_armed) { const r = S.reports[id]; respAsk = String(id); } }
+  let respAsk = '';
   async function flushPops() {
     const list = pops; pops = []; const ns = nset();
     if (!ns.on || !cfg.notify_armed || !('Notification' in window) || Notification.permission !== 'granted') return;
@@ -481,7 +501,7 @@ body:not(.locked) .gate{display:none}
       if (pc.length && (pc[0].modifiedTime !== cfg.pc_mod || !S.ready)) { const j = await getJSON(pc[0].id); got += mergeSnapshot(j.snapshot || {}); cfg.pc_mod = pc[0].modifiedTime; cfg.pc_at = j.exported_at || pc[0].modifiedTime; }
       const rs = (await find(`'${cfg.fromId}' in parents and name contains 'from-claude-'`, 'name desc')).slice(0, 5).reverse();
       for (const f of rs) { if (cfg.claude_seen && f.name <= cfg.claude_seen) continue; const j = await getJSON(f.id); got += applyClaude(j); cfg.claude_seen = f.name; cfg.claude_at = j.generated_at || f.modifiedTime; }
-      S.ready = true; persist(); refreshMe(); await flushPops(); if (!cfg.notify_armed) { cfg.notify_armed = true; saveCfg(); }
+      S.ready = true; persist(); refreshMe(); await flushPops(); offerRespond(); if (!cfg.notify_armed) { cfg.notify_armed = true; saveCfg(); }
       if (dirty || manual || !cfg.tabletFileId) await pushTablet(manual);
       cfg.last_sync = nowISO(); cfg.last_err = ''; saveCfg(); setNet(outbox.length ? 'ok' : 'ok');
       if (manual) toast(got ? `Synced - ${got} update${got > 1 ? 's' : ''} received` : 'Synced - nothing new');
@@ -527,6 +547,7 @@ body:not(.locked) .gate{display:none}
     const chips = el('div', {class: 'row'}, [['', 'All open'], ...STAGES.map((s) => [s, s]), ['Mine', 'Assigned to me']].map(([k, l]) => el('button', {type: 'button', class: 'chip' + (filter === k ? ' on' : ''), text: l, onclick: () => { filter = k; store.set('filter', k); renderCalls(); }})));
     const search = el('input', {type: 'search', id: 'q', placeholder: 'Search CAD, street, type…', value: q, 'aria-label': 'Search calls'}); search.addEventListener('input', () => { q = search.value; renderList(); });
     const tiles = el('div', {class: 'tiles'}, ['Needs info', 'Awaiting C9', 'Ready to Complete', 'Blocked'].map((s) => { const n = all.filter((r) => r.stage === s).length; return el('button', {type: 'button', class: 'tile' + (s === 'Ready to Complete' && n ? ' hot' : ''), onclick: () => { filter = s; renderCalls(); }}, el('b', {class: 'c-' + CLS[s], text: String(n)}), el('span', {text: s})); }));
+    const rb = respondBar(); if (rb) v.append(rb);
     v.append(el('div', {class: 'row'}, el('div', {style: 'flex:1;min-width:220px'}, search), el('button', {type: 'button', class: 'btn primary', text: '+ New call', onclick: () => openCall(null)})), tiles, chips, el('div', {id: 'bulkHost', style: 'margin-top:12px'}), el('div', {class: 'list', id: 'callList', style: 'margin-top:4px'}));
     const nts = store.get('notices', []);
     if (nts.length) v.insertBefore(el('div', {class: 'sec', style: 'margin-bottom:12px'}, el('h3', {}, `From Claude (${nts.length})`, el('span', {class: 'grow'}), el('button', {type: 'button', class: 'link', text: 'Clear', onclick: () => { store.set('notices', []); renderCalls(); }})), el('ul', {class: 'hist'}, nts.slice().reverse().slice(0, 8).map((x) => el('li', {}, el('b', {text: fmtWhen(x.at) + ' '}), x.text)))), v.firstChild);
@@ -626,7 +647,7 @@ body:not(.locked) .gate{display:none}
     const host = $('#sheetHost'); host.replaceChildren();
     const body = el('div', {class: 'wrap'});
     const sheet = el('div', {class: 'sheet', role: 'dialog', 'aria-label': 'Call'},
-      el('div', {class: 'bar'}, el('button', {type: 'button', class: 'btn ghost', text: '← Calls', onclick: close}), el('h2', {text: orig ? `Call ${r.num}` : 'New call'}), el('span', {class: 'grow'}), el('span', {class: 'pill c-' + (CLS[r.stage] || 'done'), text: r.stage})),
+      el('div', {class: 'bar'}, el('button', {type: 'button', class: 'btn ghost', text: '← Calls', onclick: close}), el('h2', {text: orig ? `Call ${r.num}` : 'New call'}), el('span', {class: 'grow'}), orig ? el('button', {type: 'button', class: 'btn primary', text: 'Respond', onclick: () => { close(); openResponse(orig.id); }}) : null, el('span', {class: 'pill c-' + (CLS[r.stage] || 'done'), text: r.stage})),
       el('div', {class: 'body'}, body),
       el('div', {class: 'foot'}, el('button', {type: 'button', class: 'btn ghost', text: 'Close', onclick: close}), el('button', {type: 'button', class: 'btn primary', text: 'Save', onclick: () => save()})));
     host.append(sheet); document.body.style.overflow = 'hidden';
@@ -787,6 +808,84 @@ body:not(.locked) .gate{display:none}
   async function queue(r, action, note, extra) {
     const id = `${r.id}-${action}-${Date.now()}`;
     await put('requests/' + id, Object.assign({report: r.id, cad: r.cad, action, note: note || '', status: 'queued', at: nowISO(), from: 'tablet'}, extra || {}));
+  }
+
+  // ---------- response mode: big call screen, one-tap times, quick notes, clear with mileage ----------
+  const STAMPS = [['enroute', 'En route'], ['onscene', 'On scene'], ['ptcontact', 'Patient contact'], ['cleared', 'Clear']];
+  const hhmm = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  let wake = null;
+  async function keepAwake(on) { try { if (on && navigator.wakeLock && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } else if (!on && wake) { await wake.release(); wake = null; } } catch (e) { wake = null; } }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && store.get('resp', '')) keepAwake(true); });
+  function offerRespond() {
+    const id = respAsk; respAsk = ''; const r = id && S.reports[id]; if (!r || store.get('resp', '') || r.cleared_at) return;
+    if (r.assigned_to && ME && r.assigned_to !== ME) return;
+    store.set('respOffer', id); if (view === 'calls') renderCalls();
+  }
+  function respondBar() {
+    const act = store.get('resp', ''), off = store.get('respOffer', '');
+    const r = S.reports[act] || S.reports[off]; if (!r) return null;
+    const on = !!S.reports[act];
+    return el('div', {class: 'respbar', role: 'status'}, el('b', {text: on ? `On call ${r.num}` : `New call ${r.num}`}), el('span', {text: [r.type, r.area].filter(Boolean).join(' · ')}), el('span', {class: 'grow'}),
+      el('button', {type: 'button', class: 'go', text: on ? 'Open response' : 'Respond', onclick: () => openResponse(r.id)}),
+      on ? null : el('button', {type: 'button', class: 'x', text: 'Not mine', onclick: () => { store.set('respOffer', ''); renderCalls(); }}));
+  }
+  function openResponse(id) {
+    const r = S.reports[id]; if (!r) { toast('That call is not on this tablet yet'); return; }
+    store.set('resp', id); store.set('respOffer', ''); keepAwake(true);
+    $('#respHost') && $('#respHost').remove();
+    const host = el('div', {class: 'resp', id: 'respHost', role: 'dialog', 'aria-label': 'Response mode'}); document.body.append(host);
+    const save = async (f, msg) => { f._mod = nowISO(); f._by = 'tablet'; Object.assign(r, f); await put('reports/' + id, f, true); if (msg) toast(msg); draw(); };
+    function draw() {
+      const resp = r.resp || {};
+      const note = el('textarea', {id: 'respNote', placeholder: 'Quick note - what you see, what you did (no patient names)', rows: '2'});
+      const addNote = async () => { const t = note.value.trim(); if (!t) return; const line = `${hhmm(nowISO())} - ${t}`; await save({notes: (r.notes ? r.notes.replace(/\s+$/, '') + '\n' : '') + line}, 'Note added'); };
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const mic = SR ? el('button', {type: 'button', class: 'btn', text: '🎤 Talk', 'aria-label': 'Dictate a note', onclick: () => { try { const rec = new SR(); rec.lang = 'en-US'; rec.interimResults = false; rec.onresult = (e) => { note.value = (note.value + ' ' + e.results[0][0].transcript).trim(); }; rec.onerror = () => toast('Dictation is not available - use the keyboard mic'); rec.start(); toast('Listening…'); } catch (e) { toast('Dictation is not available - use the keyboard mic'); } }}) : null;
+      host.replaceChildren(
+        el('div', {class: 'rtop'}, el('h2', {text: `Response · ${r.num}`}), el('button', {type: 'button', text: 'Full call sheet', onclick: () => { host.remove(); openCall(id); }}), el('button', {type: 'button', text: 'Minimize', onclick: () => { host.remove(); render(); }})),
+        el('div', {class: 'rbody'},
+          el('div', {class: 'rcall'}, el('b', {text: r.type || 'Call'}), el('span', {text: [r.area, r.zone && r.zone !== '—' ? r.zone : '', r.units].filter(Boolean).join(' · ')})),
+          el('div', {class: 'rstamps'}, STAMPS.map(([k, label]) => el('button', {type: 'button', class: 'rstamp' + (k === 'cleared' ? ' clear' : '') + (resp[k] ? ' set' : ''), onclick: () => {
+            if (k === 'cleared') { clearFromResponse(); return; }
+            if (resp[k]) { confirmBox(`Change ${label}?`, `${label} is set to ${hhmm(resp[k])}. Set it to now instead, or clear it?`, 'Set to now', () => save({resp: Object.assign({}, resp, {[k]: nowISO()})}, `${label} ${hhmm(nowISO())}`)); return; }
+            save({resp: Object.assign({}, resp, {[k]: nowISO()})}, `${label} ${hhmm(nowISO())}`);
+          }}, label, el('small', {text: resp[k] ? hhmm(resp[k]) : 'Tap to stamp'})))),
+          el('div', {class: 'rnote'}, note, el('div', {style: 'display:flex;flex-direction:column;gap:8px'}, el('button', {type: 'button', class: 'btn primary', text: 'Add', onclick: addNote}), mic)),
+          r.notes ? el('ol', {class: 'rlog'}, r.notes.split('\n').filter(Boolean).slice(-8).map((x) => el('li', {text: x}))) : el('p', {class: 'note', text: 'Notes you add show here and go into the call notes.'})));
+    }
+    function clearFromResponse() {
+      const mine = units((Object.values(S.crew).find((c) => c.name === ME) || {}).assigned);
+      const onCall = (r.unitcrew || []).map((u) => u.unit).concat(units(r.units));
+      const vehs = Object.keys(S.mileage).sort(); const pick = vehs.find((v) => onCall.includes(v)) || vehs.find((v) => mine.includes(v)) || vehs[0];
+      const sel = el('select', {id: 'respVeh', 'aria-label': 'Unit'}, vehs.map((v) => el('option', {value: v, text: v, selected: v === pick})));
+      const end = el('input', {type: 'text', id: 'respEnd', inputmode: 'decimal', placeholder: 'Ending reading'}); const endH = el('input', {type: 'text', id: 'respEndH', inputmode: 'numeric', placeholder: 'Ending hours'});
+      const info = el('p', {class: 'note'}); const sync = () => { const m = S.mileage[sel.value]; const last = m && (m.rows || [])[m.rows.length - 1]; info.textContent = `${sel.value === 'A903' ? 'A903 needs tenths (000000.0). ' : ''}${last ? 'Last reading ' + last.end + (last.end_h ? ' / ' + last.end_h + ' h' : '') : ''}`; endH.hidden = sel.value !== 'EG906'; };
+      sel.addEventListener('change', sync); sync();
+      modal(el('div', {class: 'box', role: 'dialog', 'aria-label': 'Clear the call'}, el('h2', {text: `Clear call ${r.num}`}), el('div', {class: 'grid'}, el('label', {}, 'Unit', sel), el('label', {}, 'Ending reading', end), el('label', {}, 'Ending hours', endH)), info,
+        el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn ghost', text: 'Cancel', onclick: closeModal}), el('button', {type: 'button', class: 'btn ghost', text: 'Clear without mileage', onclick: () => finish(null)}), el('button', {type: 'button', class: 'btn primary', text: 'Clear call', onclick: () => finish(sel.value)}))));
+      async function finish(v) {
+        let row = null;
+        if (v) {
+          const m = S.mileage[v]; const e = end.value.trim(); const dec = v === 'A903';
+          if (dec && !/^\d{6}\.\d$/.test(e)) { toast('A903 needs tenths: 000000.0'); return; } if (!dec && !/^\d+$/.test(e)) { toast('Enter the ending reading'); return; }
+          if ((m.rows || []).length >= 16) { toast(`${v} page is full - start a new page on the Mileage tab, then clear`); return; }
+          const last = (m.rows || [])[m.rows.length - 1]; const beg = last ? last.end : '';
+          if (beg && Number(e) <= Number(beg)) { toast(`End ${e} is not higher than the last reading ${beg}`); return; }
+          const d = new Date(); const t = r.type || ''; const purpose = /fire|alarm|smoke|brush|grass/i.test(t) ? 'Fire - ' + t : /tree|line|service|hazard|storm|public/i.test(t) ? 'Service - ' + t : 'EMS - ' + t;
+          row = {date: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`, beg, end: e, beg_h: last ? (last.end_h || '') : '', end_h: endH.value.trim(), purpose, comments: `CAD ${r.cad} - ${t}`.trim(), initials: myInitials()};
+          m.rows = (m.rows || []).concat([row]); await put('mileage/' + v, m);
+        }
+        closeModal();
+        const now = nowISO(); const miss = []; if (!(r.unitcrew || []).some((u) => u.members && u.members.length)) miss.push('crew'); if (!String(r.notes || '').trim()) miss.push('notes'); if (!String(r.narrative || '').trim()) miss.push('narrative');
+        const f = {resp: Object.assign({}, r.resp || {}, {cleared: now}), cleared_at: now}; if (row) f.cleared_miles = row.end; if (!r.stage || r.stage === 'Needs info') f.needs = miss.length ? 'Cleared - needs ' + miss.join(', ') : 'Cleared - ready for narrative review';
+        await save(f);
+        const me = Object.values(S.crew).find((c) => c.name === ME);
+        if (me && me.status !== 'In service') { await setStatus('crew', me, 'In service'); for (const u of units(me.assigned)) { const a = Object.values(S.apparatus).find((x) => x.unit === u); if (a && a.status !== 'In service') await setStatus('apparatus', a, 'In service'); } }
+        store.set('resp', ''); keepAwake(false); host.remove(); render();
+        toast(`Call ${r.num} cleared${row ? ` · ${v} row added (${row.beg || '?'} → ${row.end})` : ''} · you are in service`);
+      }
+    }
+    draw();
   }
 
   // ---------- modal helpers ----------
@@ -1050,7 +1149,8 @@ body:not(.locked) .gate{display:none}
     sess.set('locked', '1'); showPin('unlock', u, reason === 'Locked.' ? '' : reason);
   }
   function logOut(reason) { sess.set('unlocked', null); sess.set('user', null); sess.set('locked', null); PC.card.hidden = true; document.body.classList.add('locked'); closeModal(); setMode('signin', reason); }
-  function unlockApp(u) { sess.set('locked', null); PC.card.hidden = true; sess.set('unlocked', '1'); sess.set('user', u.username); store.set('lastuser', u.username); document.body.classList.remove('locked'); fails = 0; lastAct = Date.now(); $('#lockBtn').title = `Signed in as ${u.username} - tap to lock`; if (view === 'settings') renderSettings(); if (pendingOpen) { const id = pendingOpen; pendingOpen = ''; setTimeout(() => openFromPop(id), 50); } }
+  function unlockApp(u) { sess.set('locked', null); PC.card.hidden = true; sess.set('unlocked', '1'); sess.set('user', u.username); store.set('lastuser', u.username); document.body.classList.remove('locked'); fails = 0; lastAct = Date.now(); $('#lockBtn').title = `Signed in as ${u.username} - tap to lock`; if (view === 'settings') renderSettings(); if (store.get('resp', '') && S.reports[store.get('resp', '')] && !pendingOpen) setTimeout(() => openResponse(store.get('resp', '')), 60);
+    if (pendingOpen) { const id = pendingOpen; pendingOpen = ''; setTimeout(() => openFromPop(id), 50); } }
   function shake(t) { GT.form.classList.remove('shake'); void GT.form.offsetWidth; GT.form.classList.add('shake'); GT.msg.textContent = t; }
   function slow() { const now = Date.now(); if (now < waitUntil) { GT.msg.textContent = `Too many tries - wait ${Math.ceil((waitUntil - now) / 1000)} s.`; return true; } return false; }
   function miss(t) { fails++; if (fails >= 5) { waitUntil = Date.now() + 30000; fails = 0; shake('Wrong 5 times - wait 30 seconds.'); } else shake(t); }
