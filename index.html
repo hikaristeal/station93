@@ -345,7 +345,7 @@ body.bd-night .app{filter:brightness(.88)}
 <script>
 (function () {
   'use strict';
-  const APPV = '2.5.0';
+  const APPV = '2.5.1';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -463,8 +463,8 @@ body.bd-night .app{filter:brightness(.88)}
   // ----- merging -----
   const newer = (a, b) => String(a || '') > String(b || '');
   // ----- Android pop-up notifications (shown when a sync brings something new) -----
-  const NK = {call: 'New calls', approval: 'Approvals and Ready to Complete', claude: "Claude's work (narratives, OK to Complete results)", other: 'Other updates (stage changes, mileage, notices)'};
-  const nset = () => Object.assign({on: false, details: true, call: true, approval: true, claude: true, other: false}, store.get('notify', {}));
+  const NK = {call: 'New calls', status: 'Vehicles and crew going in or out of service', approval: 'Approvals and Ready to Complete', claude: "Claude's work (narratives, OK to Complete results)", other: 'Other updates (stage changes, mileage, notices)'};
+  const nset = () => Object.assign({on: false, details: true, call: true, status: true, approval: true, claude: true, other: false}, store.get('notify', {}));
   let pops = [];
   function pop(kind, title, body, id) { pops.push({kind, title, body, id}); if (kind === 'call' && id && cfg.notify_armed) { const r = S.reports[id]; respAsk = String(id); } }
   let respAsk = '';
@@ -495,13 +495,20 @@ body.bd-night .app{filter:brightness(.88)}
       el('p', {class: 'note', text: 'Pop-ups come from the app itself, so they arrive while Station 93 is open or was used in the last few minutes - Android pauses the app after that, and the Google sign-in renews on your next touch after it runs out (about hourly). Dispatches still come from Bryx first; these cover what Claude and the PC app changed.'}));
   }
 
+  // pop-up when another device (or Claude) puts a vehicle or crew member in or out of service
+  function popStatus(coll, cur, inc) {
+    if (!cur || !inc || !inc.status || inc.status === cur.status || inc.status === 'Not set') return;
+    const who = coll === 'apparatus' ? (inc.unit || cur.unit || inc.id) : `${inc.name || cur.name || inc.id}${(inc.number || cur.number) && (inc.number || cur.number) !== '—' ? ' #' + (inc.number || cur.number) : ''}`;
+    const t = inc.status_at ? hhmmLocal(inc.status_at) : ''; pop('status', `${who}: ${inc.status}`, [t ? 'at ' + t : '', inc.status_note || '', inc.status_by && !/^(tablet|page|app)$/.test(inc.status_by) ? 'from ' + inc.status_by : ''].filter(Boolean).join(' · '), '');
+  }
+  const hhmmLocal = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
   // an apparatus assignment made on this tablet wins until a newer one comes from the PC
   function keepAssign(cur, inc) { if (!cur || !('assigned' in cur)) return inc; if (newer(cur.assigned_at, inc.assigned_at || '')) return Object.assign({}, inc, {assigned: cur.assigned, assigned_at: cur.assigned_at}); return inc; }
   function mergeSnapshot(snap) {
     let n = 0; const arr = (x) => Array.isArray(x) ? x : Object.values(x || {});
     const pend = new Set(outbox.filter((c) => c.kind === 'report.update').map((c) => String(c.id)));
     for (const inc of arr(snap.reports)) { const id = String(inc.id); const cur = S.reports[id]; if (!cur || newer(inc._mod, cur._mod) || (!inc._mod && !cur._mod && !pend.has(id) && JSON.stringify(inc) !== JSON.stringify(cur))) { if (!cur) pop('call', `New call ${inc.num || id}`, [inc.type, inc.area].filter(Boolean).join(' · '), id); else if (inc.stage && inc.stage !== cur.stage) pop(inc.stage === 'Ready to Complete' ? 'approval' : 'other', `${inc.num || id}: ${inc.stage}`, inc.needs || '', id); S.reports[id] = Object.assign({}, inc, {id}); n++; } }
-    for (const k of ['crew', 'apparatus']) for (const inc0 of arr(snap[k])) { const id = String(inc0.id); const cur = S[k][id]; const inc = keepAssign(cur, inc0); if (!cur || !newer(cur.status_at, inc.status_at) && JSON.stringify(inc) !== JSON.stringify(cur)) { S[k][id] = Object.assign({}, inc, {id}); n++; } }
+    for (const k of ['crew', 'apparatus']) for (const inc0 of arr(snap[k])) { const id = String(inc0.id); const cur = S[k][id]; const inc = keepAssign(cur, inc0); if (!cur || !newer(cur.status_at, inc.status_at) && JSON.stringify(inc) !== JSON.stringify(cur)) { popStatus(k, cur, inc); S[k][id] = Object.assign({}, inc, {id}); n++; } }
     for (const inc of arr(snap.mileage)) { const v = inc.vehicle || inc.id; const cur = S.mileage[v]; if (!cur || inc.page > cur.page || (inc.page === cur.page && (inc.rows || []).length > (cur.rows || []).length)) { S.mileage[v] = Object.assign({}, inc, {vehicle: v}); n++; } }
     purgeDeleted(); return n;
   }
@@ -523,7 +530,7 @@ body.bd-night .app{filter:brightness(.88)}
     cfg.seen_ap = cfg.seen_ap || [];
     for (const ap of j.approvals || []) { const key = `${ap.id}|${ap.text}`; if (cfg.seen_ap.includes(key)) continue; cfg.seen_ap.push(key); pop('approval', `${ap.id}: ${ap.text || 'approval'}`, ap.stage || '', String(ap.id)); const r = S.reports[String(ap.id)]; if (r && !newer(r._mod, g)) { if (g) r._mod = g; if (ap.stage) r.stage = ap.stage; if (ap.needs) r.needs = ap.needs; } notes.push(`${ap.id}: ${ap.text || 'approval'}`); n++; }
     cfg.seen_ap = cfg.seen_ap.slice(-300);
-    for (const k of ['crew', 'apparatus']) for (const inc0 of j[k] || []) { const cur = S[k][inc0.id]; const inc = keepAssign(cur, inc0); if (!cur || !newer(cur.status_at, inc.status_at || g)) { S[k][inc.id] = Object.assign(cur || {}, inc); if (g && !newer(S[k][inc.id]._mod, g)) S[k][inc.id]._mod = g; n++; } }
+    for (const k of ['crew', 'apparatus']) for (const inc0 of j[k] || []) { const cur = S[k][inc0.id]; const inc = keepAssign(cur, inc0); if (!cur || !newer(cur.status_at, inc.status_at || g)) { popStatus(k, cur && Object.assign({}, cur), inc); S[k][inc.id] = Object.assign(cur || {}, inc); if (g && !newer(S[k][inc.id]._mod, g)) S[k][inc.id]._mod = g; n++; } }
     for (const m of j.mileage || []) { const cur = S.mileage[m.vehicle]; if (!cur || m.page > cur.page || (m.page === cur.page && (m.rows || []).length >= (cur.rows || []).length)) { if (cur && (m.rows || []).length > (cur.rows || []).length) pop('other', `${m.vehicle} mileage`, `Row ${m.rows.length} added`, ''); if (cur && (m.rows || []).length > (cur.rows || []).length) notes.push(`${m.vehicle} mileage: row ${m.rows.length} added`); S.mileage[m.vehicle] = Object.assign(cur || {}, m); n++; } }
     for (const x of j.notices || []) if (x && x.text) { notes.push(String(x.text)); if (!/nothing new/i.test(x.text)) pop('other', 'Station 93', String(x.text), ''); }
     for (const dn of j.requests_done || []) if (dn.id && S.requests[dn.id]) Object.assign(S.requests[dn.id], {status: dn.status || 'done', done_at: dn.at, note: dn.note || S.requests[dn.id].note, updated_at: g || nowISO()});
@@ -554,6 +561,7 @@ body.bd-night .app{filter:brightness(.88)}
         if (!r || (c === 'reports' && r.test)) continue;
         if (c === 'devices') { const cur = map[id]; const ab = !cur || String(r.last_seen || '') > String(cur.last_seen || '') || (String(r.last_seen || '') === String(cur.last_seen || '') && stable(r) > stable(cur)); const m = ab ? Object.assign({}, cur || {}, r) : Object.assign({}, r, cur); if (r.revoked || (cur && cur.revoked)) { m.revoked = true; m.revoked_at = maxs(r.revoked_at, cur && cur.revoked_at); m.revoked_by = (ab ? r.revoked_by : cur && cur.revoked_by) || r.revoked_by || (cur && cur.revoked_by) || ''; } if (stable(m) !== stable(cur || {})) { map[id] = m; n++; } continue; }
         const cur = map[id]; if (!takeIn(c, cur, r)) continue;
+        if ((c === 'crew' || c === 'apparatus') && cur) popStatus(c, cur, r);
         if (c === 'reports' && !cur) pop('call', `New call ${r.num || id}`, [r.type, r.area].filter(Boolean).join(' · '), id);
         else if (c === 'reports' && r.stage && r.stage !== cur.stage) pop(r.stage === 'Ready to Complete' ? 'approval' : 'other', `${r.num || id}: ${r.stage}`, r.needs || '', id);
         map[id] = JSON.parse(JSON.stringify(r)); n++;
@@ -1565,7 +1573,7 @@ body.bd-night .app{filter:brightness(.88)}
   // ---------- crew & apparatus ----------
   async function setStatus(coll, row, status) {
     row.status = status; row.status_at = nowISO();
-    await put(`${coll}/${row.id}`, {status, status_at: row.status_at}, true);
+    row.status_by = cfg.device_name || (me() || {}).username || 'another device'; await put(`${coll}/${row.id}`, {status, status_at: row.status_at, status_by: row.status_by}, true);
     await put(`servicelog/${coll}-${row.id}-${Date.now()}`, {key: `${coll}:${row.id}`, name: row.name || row.unit, status, at: row.status_at, by: 'tablet'});
     render();
   }
