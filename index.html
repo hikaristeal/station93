@@ -318,7 +318,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.9.0';
+  const APPV = '1.9.1';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -435,7 +435,7 @@ body:not(.locked) .gate{display:none}
     if (!ns.on || !cfg.notify_armed || !('Notification' in window) || Notification.permission !== 'granted') return;
     const send = list.filter((x) => ns[x.kind]); if (!send.length) return;
     const reg = navigator.serviceWorker ? await navigator.serviceWorker.getRegistration().catch(() => null) : null;
-    const show = (title, body, id, tag) => { const o = {body: ns.details ? body : 'Open Station 93 to see it', icon: 'icon-192.png', badge: 'icon-192.png', tag, renotify: true, data: {id: id || ''}}; const t = ns.details ? title : 'Station 93 update'; try { if (reg) reg.showNotification(t, o); else new Notification(t, o); } catch (e) { /* not allowed here */ } };
+    const show = (title, body, id, tag) => { const o = {body: ns.details ? body : 'Open Station 93 to see it', icon: 'notify-192.png', badge: 'badge-96.png', tag, renotify: true, data: {id: id || ''}}; const t = ns.details ? title : 'Station 93 update'; try { if (reg) reg.showNotification(t, o); else new Notification(t, o); } catch (e) { /* not allowed here */ } };
     if (send.length > 4) show(`${send.length} Station 93 updates`, send.slice(0, 4).map((x) => x.title).join('\n') + '\n…', '', 'st93-batch');
     else send.forEach((x) => show(x.title, x.body, x.id, x.id ? 'st93-' + x.id + '-' + x.kind : 'st93-' + x.kind + '-' + Date.now()));
   }
@@ -448,7 +448,7 @@ body:not(.locked) .gate{display:none}
     const save = (k, v) => { const o = nset(); o[k] = v; store.set('notify', o); };
     const box = (k, label) => { const c = el('input', {type: 'checkbox', checked: !!ns[k], style: 'width:22px;height:22px'}); c.addEventListener('change', () => save(k, c.checked)); return el('label', {class: 'row', style: 'gap:10px;min-height:44px'}, c, label); };
     const turnOn = async () => { if (!can) { toast('This browser cannot show notifications'); return; } const r = await Notification.requestPermission(); if (r === 'granted') { save('on', true); toast('Pop-ups on'); } else toast('Notifications are blocked - allow them in Android Settings > Apps > Station 93 > Notifications'); renderSettings(); };
-    const test = async () => { const reg = navigator.serviceWorker ? await navigator.serviceWorker.getRegistration().catch(() => null) : null; const o = {body: 'This is how Station 93 updates will look.', icon: 'icon-192.png', badge: 'icon-192.png', tag: 'st93-test', data: {id: ''}}; try { if (reg) await reg.showNotification('Station 93 test', o); else new Notification('Station 93 test', o); } catch (e) { toast('Could not show it: ' + e.message); } };
+    const test = async () => { const reg = navigator.serviceWorker ? await navigator.serviceWorker.getRegistration().catch(() => null) : null; const o = {body: 'This is how Station 93 updates will look.', icon: 'notify-192.png', badge: 'badge-96.png', tag: 'st93-test', data: {id: ''}}; try { if (reg) await reg.showNotification('Station 93 test', o); else new Notification('Station 93 test', o); } catch (e) { toast('Could not show it: ' + e.message); } };
     return el('div', {class: 'sec'}, el('h3', {text: 'Pop-up notifications'}),
       el('p', {class: 'note', text: perm === 'granted' && ns.on ? 'On. Android shows a pop-up when a sync brings something new.' : perm === 'denied' ? 'Blocked by Android. Turn them on in Android Settings > Apps > Station 93 > Notifications, then come back here.' : perm === 'unsupported' ? 'This browser cannot show notifications.' : 'Off.'}),
       el('div', {class: 'row'}, perm === 'granted' && ns.on ? el('button', {type: 'button', class: 'btn', text: 'Turn off', onclick: () => { save('on', false); renderSettings(); }}) : el('button', {type: 'button', class: 'btn primary', text: 'Turn on pop-ups', onclick: turnOn}), perm === 'granted' ? el('button', {type: 'button', class: 'btn ghost', text: 'Send a test', onclick: test}) : null),
