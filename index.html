@@ -282,6 +282,8 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
 .arc .a-atop{position:relative;z-index:2;display:flex;align-items:center;gap:14px;padding:max(18px,env(safe-area-inset-top,0px)) 24px 0}
 .arc .a-atop h2{margin:0;font-size:16px;color:#E0524A;letter-spacing:1px}.arc .a-atop small{display:block;color:#c9bfb3;font-size:20px;margin-top:4px}
 .arc .a-fire{font-size:10px;color:#F28C28;border:3px solid #F28C28;padding:6px 8px}.arc .a-blink{animation:arcblink 1.1s steps(1) infinite;color:#FFD23F;font-size:10px}
+.arc .a-scene{position:relative;z-index:2;flex:0 0 auto;overflow:hidden;margin-top:12px;background:#0d0a14}.arc .a-scin{position:absolute;left:0;top:0;width:1280px;height:292px;transform-origin:0 0}
+.arc .a-build{min-height:0}
 .arc .a-vp{position:relative;z-index:2;flex:1;min-height:0;overflow:hidden;margin:16px 0 0;touch-action:pan-y}
 .arc .a-track{display:flex;height:100%;transition:transform .36s steps(6)}
 .arc .a-card{flex:0 0 100%;box-sizing:border-box;padding:0 24px 8px;height:100%}
@@ -319,7 +321,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
 @keyframes arcblink{0%,49%{opacity:1}50%,100%{opacity:0}}
 @keyframes arcember{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-420px);opacity:0}}
 @keyframes archover{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-@media (max-width:640px){.arc .a-card{padding:0 10px 8px}.arc .cin{padding:14px}.arc .a-hstage{flex-basis:100%;height:200px}.arc .a-bl{flex-basis:110px}.arc .a-atop .a-blink{display:none}.arc .a-nav{padding-bottom:100px}.arc .a-floor{height:90px}}
+@media (max-width:640px){.arc .a-avatar img{width:112px;height:168px}.arc .a-card{padding:0 10px 8px}.arc .cin{padding:14px}.arc .a-hstage{flex-basis:100%;height:200px}.arc .a-bl{flex-basis:110px}.arc .a-atop .a-blink{display:none}.arc .a-nav{padding-bottom:100px}.arc .a-floor{height:90px}}
 @media (prefers-reduced-motion:reduce){.arc *{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -388,10 +390,11 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
 <script src="geo.js"></script>
 <script src="zones.js"></script>
 <script src="ntypes.js"></script>
+<script src="arcade93.js"></script>
 <script>
 (function () {
   'use strict';
-  const APPV = '2.6.1';
+  const APPV = '2.7.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -1047,7 +1050,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
   function openArcade() {
     $('#arcHost') && $('#arcHost').remove();
     const host = el('div', {class: 'arc', id: 'arcHost', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'AVFD dashboard'}); document.body.append(host);
-    const close = () => { host.remove(); document.removeEventListener('keydown', key); };
+    let arc93 = null; const close = () => { if (arc93) arc93.unmount(); removeEventListener('resize', fit); host.remove(); document.removeEventListener('keydown', key); };
     const then = (fn) => () => { close(); fn(); };
     const key = (e) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') goTo(arcIdx + 1); else if (e.key === 'ArrowLeft') goTo(arcIdx - 1); };
     document.addEventListener('keydown', key);
@@ -1066,17 +1069,32 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     const overdue = R.filter((r) => ['Needs info', 'Draft staged'].includes(r.stage) && ageDays(r) >= 7).length;
     const ap = Object.values(S.apparatus).filter((a) => a.unit).sort((a, b) => a.unit.localeCompare(b.unit));
     const crewOn = (un) => Object.values(S.crew).filter((c) => units(c.assigned).includes(un)).map((c) => lastName(c.name));
+    // firehouse scene + crew builder (concept D): bays follow apparatus status, crew follow the roster
+    const sceneIn = el('div', {class: 'a-scin'}); const scene = el('div', {class: 'a-scene', 'aria-hidden': 'true'}, sceneIn);
+    const builder = el('div', {class: 'a-build'}); const heroImg = el('img', {alt: 'Your pixel character', width: '144', height: '216', style: 'image-rendering:pixelated;display:block'});
+    const fit = () => { const w = scene.clientWidth || innerWidth; const k = Math.min(1.2, w / 1280, Math.max(0.3, innerHeight * 0.26 / 252)); sceneIn.style.transform = `translate(${Math.max(0, (w - 1280 * k) / 2)}px, ${-40 * k}px) scale(${k})`; scene.style.height = Math.round(252 * k) + 'px'; };
+    addEventListener('resize', fit);
+    const FIRE = ['TA905', 'EG906']; const crewList = () => Object.values(S.crew).filter((c) => c.name).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    const hooks = {
+      key: 'st93t.arc_crew', img: (n) => n, toast, props: {timeOfDay: 'auto', fireLevel: Math.round(firePct * 100)},
+      svc: () => { const o = {}; FIRE.forEach((un) => { const a = Object.values(S.apparatus).find((x) => x.unit === un); o[un] = !(a && a.status === 'Out of service'); }); return o; },
+      responding: () => { const r = activeCall(); if (!r || !r.resp || !r.resp.enroute || r.resp.cleared || r.cleared_at) return []; return FIRE.filter((un) => (r.unitcrew || []).some((x) => x.unit === un) || units(r.units).includes(un)); },
+      meId: () => (meRec() || {}).id || '', findId: (re) => ((crewList().find((c) => re.test(c.name))) || {}).id || '',
+      status: (id) => (S.crew[id] || {}).status || '', nameOf: (id) => (S.crew[id] || {}).name || 'that member',
+      crew: () => crewList().map((c) => ({id: c.id, name: c.name, status: c.status || ''})),
+      onCrew: (crew) => { if (arc93) heroImg.src = arc93.sprite(crew[0]); }};
     const cards = [
       card('#E0524A', 'PLAYER 1', 'HERO', el('div', {class: 'a-herobox'},
-        el('div', {class: 'a-hstage'}, el('div', {class: 'a-hflames', 'aria-hidden': 'true'}, flameCols(16, Math.round(90 * fk), Math.max(4, Math.round(110 * fk)), 41)), el('div', {class: 'a-avatar'}, pxEl('0 0 14 14', 150, 150, PX_AV, 'Pixel firefighter avatar')), el('div', {class: 'a-pedestal', 'aria-hidden': 'true'})),
+        el('div', {class: 'a-hstage'}, el('div', {class: 'a-hflames', 'aria-hidden': 'true'}, flameCols(16, Math.round(90 * fk), Math.max(4, Math.round(110 * fk)), 41)), el('div', {class: 'a-avatar'}, heroImg), el('div', {class: 'a-pedestal', 'aria-hidden': 'true'})),
         el('div', {class: 'a-htext'}, el('div', {class: 'a-hname p2', text: (ME || u.username || 'Firefighter').toUpperCase()}), el('div', {class: 'a-hrank'}, myNum() ? '#' + myNum() + ' · ' : '', rk), el('div', {class: 'a-hsub', text: 'Argyle Fire · Station 93'}), el('div', {class: 'a-chip p2 ' + stc, text: '● ' + st.toUpperCase()}))),
         kv([['ROLE', (roleOf(u) || '').replace(/^./, (c) => c.toUpperCase())], ['ON UNIT', units(m && m.assigned).join(', ') || 'None assigned'], ['DEVICE', cfg.device_name || 'Not named (Settings)'], ['OPEN REPORTS', String(open.length)]])),
-      card('#F28C28', 'STAGE 2', 'REPORT QUEST', bars, kv([['FIRE LEVEL', `${Math.round(firePct * 100)}% - ${open.length} of ${R.length} reports active`], ['THIS MONTH', `${monDone} of ${mon.length} done`], ['STREAK', overdue ? `Paused - ${overdue} report${overdue > 1 ? 's' : ''} 7+ days old` : 'Active']])),
+      card('#3FB26B', 'STAGE 2', 'CREW BUILDER', builder),
       card('#FFD23F', 'STAGE 3', 'BADGES', el('div', {class: 'a-badges'}, arcBadges().map((b) => el('div', {class: 'a-bdg' + (b.on ? ' on' : b.warn ? ' warn' : '')}, el('b', {class: 'p2', text: b.st}), el('strong', {class: 'p2', text: b.n}), el('small', {text: b.rule}))))),
       card('#9FD4F2', 'STAGE 4', 'FLEET', ap.length ? kv(ap.map((a) => { const rd = lastReading(a.unit); return [a.unit, el('div', {style: 'border:0;padding:0;background:none'}, el('div', {style: 'border:0;padding:0;background:none;color:' + (a.status === 'In service' ? '#3FB26B' : a.status === 'Out of service' ? '#ff7a70' : '#c9bfb3'), text: a.status || 'Not set'}), el('div', {style: 'border:0;padding:0;background:none', text: crewOn(a.unit).join(', ') || 'No crew assigned'}), rd != null ? el('div', {style: 'border:0;padding:0;background:none;color:#a99e92', text: 'Last reading ' + rd}) : null)]; })) : el('p', {text: 'No apparatus yet - add them on the Crew tab.'}), el('div', {}, el('button', {type: 'button', class: 'px', text: 'CREW TAB ▶', onclick: then(() => show('crew'))}))),
       card('#3FB26B', 'STAGE 5', 'SYSTEM', kv([['VERSION', APPV + (upd.ready ? ` (update ${upd.version || 'ready'})` : '')], ['LAST SYNC', cfg.last_sync ? fmtWhen(cfg.last_sync) : 'Never'], ['SHARED FILE', cfg.shared_at ? `${fmtWhen(cfg.shared_at)}${cfg.shared_by ? ' · ' + cfg.shared_by : ''}` : 'Not created yet'], ['RETENTION', '30 days']]),
         el('div', {class: 'row', style: 'gap:14px'}, el('button', {type: 'button', class: 'px green', text: 'SYNC NOW', onclick: () => { syncNow(true); toast('Syncing…'); }}), el('button', {type: 'button', class: 'px', text: upd.ready ? 'INSTALL UPDATE' : 'CHECK FOR UPDATE', onclick: then(() => { show('settings'); upd.ready ? installUpdate() : checkUpdate(); })}))),
-      card('#4A8FE0', 'STAGE 6', 'QUICK MOVES', el('div', {class: 'a-moves'}, el('button', {type: 'button', class: 'px red', text: '+ NEW CALL', onclick: then(() => { show('calls'); openCall(null); })}), el('button', {type: 'button', class: 'px', text: 'MILEAGE', onclick: then(() => show('mileage'))}), el('button', {type: 'button', class: 'px blue', text: 'ZONE MAP', onclick: then(() => show('map'))}), el('button', {type: 'button', class: 'px green', text: 'STATION TV', onclick: then(openTV)}), el('button', {type: 'button', class: 'px', text: 'STATS', onclick: then(() => show('stats'))}), el('button', {type: 'button', class: 'px', text: 'SETTINGS', onclick: then(() => show('settings'))})))];
+      card('#4A8FE0', 'STAGE 6', 'QUICK MOVES', el('div', {class: 'a-moves'}, el('button', {type: 'button', class: 'px red', text: '+ NEW CALL', onclick: then(() => { show('calls'); openCall(null); })}), el('button', {type: 'button', class: 'px', text: 'MILEAGE', onclick: then(() => show('mileage'))}), el('button', {type: 'button', class: 'px blue', text: 'ZONE MAP', onclick: then(() => show('map'))}), el('button', {type: 'button', class: 'px green', text: 'STATION TV', onclick: then(openTV)}), el('button', {type: 'button', class: 'px', text: 'STATS', onclick: then(() => show('stats'))}), el('button', {type: 'button', class: 'px', text: 'SETTINGS', onclick: then(() => show('settings'))}))),
+      card('#F28C28', 'STAGE 7', 'REPORT QUEST', bars, kv([['FIRE LEVEL', `${Math.round(firePct * 100)}% - ${open.length} of ${R.length} reports active`], ['THIS MONTH', `${monDone} of ${mon.length} done`], ['STREAK', overdue ? `Paused - ${overdue} report${overdue > 1 ? 's' : ''} 7+ days old` : 'Active']]))];
     const N = cards.length; const track = el('div', {class: 'a-track'}, cards);
     const dots = cards.map((c, k) => el('button', {type: 'button', class: 'a-dot', 'aria-label': 'Show ' + c.getAttribute('aria-label'), onclick: () => goTo(k)}, el('i')));
     function goTo(n) { arcIdx = ((n % N) + N) % N; store.set('arc_idx', arcIdx); track.style.transform = `translateX(${-arcIdx * 100}%)`; dots.forEach((d, k) => { d.classList.toggle('on', k === arcIdx); d.setAttribute('aria-current', k === arcIdx ? 'true' : 'false'); }); cards.forEach((c, k) => { c.inert = k !== arcIdx; c.style.opacity = k === arcIdx ? '1' : '.35'; }); }
@@ -1088,10 +1106,12 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     host.append(el('div', {class: 'a-scan', 'aria-hidden': 'true'}),
       ...Array.from({length: 10}, (_, k) => el('div', {class: 'a-ember', 'aria-hidden': 'true', style: `left:${((k + 0.5) / 10 * 100).toFixed(1)}%;animation-delay:${(k * 0.37 % 3.2).toFixed(2)}s`})),
       el('div', {class: 'a-atop'}, pxEl('0 0 11 11', 40, 40, PX_X), el('div', {}, el('h2', {class: 'p2', text: 'AVFD · STATION 93'}), el('small', {text: 'ARGYLE FIRE COMMAND CONSOLE'})), el('span', {class: 'grow', style: 'flex:1'}), el('span', {class: 'a-fire p2', title: 'Flames grow with the share of reports still open', text: `FIRE LEVEL ${Math.round(firePct * 100)}%`}), el('span', {class: 'a-blink p2', 'aria-hidden': 'true', text: '◀ SWIPE ▶'}), el('button', {type: 'button', class: 'px red', 'aria-label': 'Close dashboard', text: 'X', onclick: close})),
-      vp,
+      scene, vp,
       el('div', {class: 'a-nav'}, el('button', {type: 'button', class: 'px', 'aria-label': 'Previous card', text: '◀', onclick: () => goTo(arcIdx - 1)}), dots, el('button', {type: 'button', class: 'px', 'aria-label': 'Next card', text: '▶', onclick: () => goTo(arcIdx + 1)})),
       el('div', {class: 'a-floor', 'aria-hidden': 'true'}, flameCols(Math.min(80, Math.round(W / 20)), Math.round(50 * fk), Math.max(4, Math.round(70 * fk)), 37)));
     goTo(arcIdx); host.querySelector('.a-atop .px').focus();
+    if (window.Arcade93) { try { arc93 = Arcade93.mount(sceneIn, builder, hooks); heroImg.src = arc93.sprite(arc93.crew()[0]); } catch (e) { console.error(e); scene.remove(); } } else scene.remove();
+    fit();
   }
   $('#avfdBtn').addEventListener('click', openArcade);
   document.querySelector('.top h1').addEventListener('click', openArcade); document.querySelector('.top h1').style.cursor = 'pointer'; document.querySelector('.top h1').title = 'AVFD dashboard';
