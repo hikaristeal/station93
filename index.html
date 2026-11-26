@@ -318,7 +318,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.8.3';
+  const APPV = '1.9.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -372,7 +372,9 @@ body:not(.locked) .gate{display:none}
   }
 
   // ----- Google sign-in (token only, kept on this tablet for up to an hour) -----
-  const SCOPES = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
+  const GMAIL = 'https://www.googleapis.com/auth/gmail.readonly';
+  const SCOPES = () => 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file' + (cfg.bryx_watch ? ' ' + GMAIL : '');
+  const hasGmail = () => !!(tok && String(tok.scope || '').includes(GMAIL));
   let tok = store.get('tok', null);
   const clientId = () => (cfg.client_id || (window.ST93_CONFIG && window.ST93_CONFIG.clientId) || '').trim();
   const tokenOk = () => tok && tok.exp > Date.now() + 60000;
@@ -392,8 +394,8 @@ body:not(.locked) .gate{display:none}
     if (!clientId()) { if (!quiet) { toast('Add the Google sign-in ID in Settings first'); show('settings'); } return false; }
     if (!(await loadGsi())) { if (!quiet) toast('Could not reach Google - check the wifi'); return false; }
     return new Promise((res) => {
-      const tc = google.accounts.oauth2.initTokenClient({client_id: clientId(), scope: SCOPES, prompt: cfg.connected ? '' : 'consent', hint: cfg.email || undefined,
-        callback: (r) => { if (!r || r.error || !r.access_token) { res(false); return; } tok = {t: r.access_token, exp: Date.now() + (Number(r.expires_in) || 3600) * 1000}; store.set('tok', tok); cfg.connected = true; saveCfg(); res(true); },
+      const tc = google.accounts.oauth2.initTokenClient({client_id: clientId(), scope: SCOPES(), prompt: cfg.connected ? '' : 'consent', hint: cfg.email || undefined,
+        callback: (r) => { if (!r || r.error || !r.access_token) { res(false); return; } tok = {t: r.access_token, exp: Date.now() + (Number(r.expires_in) || 3600) * 1000, scope: r.scope || ''}; store.set('tok', tok); cfg.connected = true; saveCfg(); res(true); },
         error_callback: () => res(false)});
       tc.requestAccessToken();
     });
@@ -511,6 +513,69 @@ body:not(.locked) .gate{display:none}
       cfg.last_err = e.message; saveCfg(); setNet(e.code === 'auth' ? 'tap' : 'bad', e.code === 'auth' ? 'Tap to sync' : 'Sync problem - see Settings'); if (manual) toast('Sync problem: ' + e.message);
     } finally { syncing = false; if (!$('#sheetHost').children.length && !document.querySelector('.sheet') && view !== 'settings') render(); else if (view === 'settings') renderSettings(); }
   }
+  // ----- Bryx dispatch watch: reads Bryx dispatch emails from Gmail while the app is open -----
+  // Keeps time, CAD ID, call type, street, units, box and coordinates. The dispatch narrative is never kept.
+  const GM = 'https://gmail.googleapis.com/gmail/v1/users/me';
+  let bryxBusy = false;
+  const b64u = (x) => { try { return decodeURIComponent(escape(atob(String(x).replace(/-/g, '+').replace(/_/g, '/')))); } catch (e) { return ''; } };
+  function mailText(pl) { if (!pl) return ''; if (pl.mimeType === 'text/plain' && pl.body && pl.body.data) return b64u(pl.body.data); for (const p of pl.parts || []) { const t = mailText(p); if (t) return t; } if (pl.mimeType === 'text/html' && pl.body && pl.body.data) return b64u(pl.body.data).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, ''); return ''; }
+  function parseBryx(txt) {
+    const f = {}; txt.split(/\r?\n/).forEach((l) => { const i = l.indexOf(':'); if (i > 0) { const k = l.slice(0, i).trim(); if (/^[a-zA-Z]+$/.test(k)) f[k] = l.slice(i + 1).trim(); } });
+    if (!f.incidentId && !f.cadId) return null;
+    const c = (f.coordinates || '').match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/); let lo = c ? Number(c[1]) : null, la = c ? Number(c[2]) : null; if (la != null && la < 0) [la, lo] = [lo, la];
+    const ts = /^\d{4}-\d\d-\d\d \d\d:\d\d/.test(f.timestamp || '') ? new Date(f.timestamp.replace(' ', 'T') + 'Z') : null;
+    return {cad: /^2026-\d{8}$/.test(f.cadId || '') ? f.cadId : '', incident: f.incidentId || '', type: f.callType || '', category: f.category || '', area: (f.location || '').replace(/^\d+[A-Z]?\s+/, ''), units: f.dispatch || '', box: f.box || '', la, lo, when: ts && !isNaN(ts) ? ts : null};
+  }
+  async function checkBryx(manual) {
+    if (!cfg.bryx_watch || bryxBusy || !navigator.onLine) return;
+    if (!tokenOk() || !hasGmail()) { if (manual) { if (!(await signIn())) return; if (!hasGmail()) { cfg.bryx_err = 'Gmail permission was not given'; saveCfg(); renderSettings(); return; } } else return; }
+    bryxBusy = true; let made = 0;
+    try {
+      const list = (await (await gd(`${GM}/messages?maxResults=15&q=${encodeURIComponent('from:no-reply@bryx.com newer_than:1d')}`)).json()).messages || [];
+      const seen = new Set(cfg.bryx_seen || []); const first = !cfg.bryx_seen;
+      for (const m of list.slice().reverse()) {
+        if (seen.has(m.id)) continue; seen.add(m.id);
+        const msg = await (await gd(`${GM}/messages/${m.id}?format=full`)).json();
+        const d = parseBryx(mailText(msg.payload)); if (!d) continue;
+        const when = d.when || new Date(Number(msg.internalDate) || Date.now());
+        if (Date.now() - when.getTime() > (first ? 6 : 24) * 3600000) continue;          // older dispatches are left to the hourly sync
+        const all = Object.values(S.reports);
+        if (all.some((r) => (d.incident && r.bryx_incident === d.incident) || (d.cad && r.cad === d.cad))) continue;   // already on the tablet
+        const num = d.cad ? Number(d.cad.slice(-3)) : Math.max(0, ...all.filter((r) => !r.test).map((r) => r.num || 0)) + 1;
+        const id = String(num); if (S.reports[id]) { addNotices([`Bryx: dispatch ${d.cad || ''} (${d.type}, ${d.area}) not added - call ${num} is already used${S.reports[id].cad_provisional ? ' by a call with a guessed CAD #' : ''}. Check the CAD #s.`]); continue; }
+        const z = d.la && d.lo && window.NerisZones ? window.NerisZones.lookup(d.la, d.lo, d.area) : null;
+        const pad = (n) => String(n).padStart(2, '0');
+        const rec = {id, cad: d.cad || `2026-${String(num).padStart(8, '0')}`, num, date: `${when.getFullYear()}-${pad(when.getMonth() + 1)}-${pad(when.getDate())}`, time: `${pad(when.getHours())}:${pad(when.getMinutes())}`,
+          type: d.type, ntypes: [], area: d.area, la: d.la, lo: d.lo, zone: z ? (z.district === 'OUT' ? (z.zone_field || z.zone) + ' (OUT)' : z.zone) : '—', district: z ? z.district : 'ARGYLE', zone_note: z ? z.why : '', zone_source: 'Proposed',
+          loc: '', locmods: [], unitcrew: [], units: d.units, crew: '', oic: lastName(ME) || 'Bishop', assigned_to: ME || 'Alex Bishop', stage: 'Needs info',
+          needs: d.cad ? 'Crew, notes, narrative' : 'Confirm the CAD # in the Bryx app', cad_provisional: !d.cad, bryx_incident: d.incident, bryx_box: d.box, notes: '', narrative: '', requests: [],
+          _mod: nowISO(), _by: 'tablet', history: [{at: nowISO(), by: 'Bryx watch (tablet)', items: [`created from the Bryx dispatch email${d.cad ? '' : ' - CAD # not assigned yet, number is a guess'}`]}]};
+        S.reports[id] = rec; await put('reports/' + id, rec); made++;
+        pop('call', `New call ${num}${d.cad ? '' : ' (CAD # to confirm)'}`, [d.type, d.area].filter(Boolean).join(' · '), id);
+        addNotices([`Bryx: new call ${num}${d.type ? ' - ' + d.type : ''}${d.area ? ', ' + d.area : ''}${d.cad ? '' : ' (CAD # not assigned yet - confirm in Bryx)'}`]);
+      }
+      cfg.bryx_seen = [...seen].slice(-200); cfg.bryx_at = nowISO(); cfg.bryx_err = ''; if (made) cfg.bryx_last = nowISO(); saveCfg();
+      if (made) { cfg.notify_armed = true; await flushPops(); offerRespond(); }
+      if (manual) toast(made ? `${made} new call${made > 1 ? 's' : ''} from Bryx` : 'No new Bryx dispatches');
+    } catch (e) {
+      cfg.bryx_err = /accessNotConfigured|has not been used|is disabled/i.test(e.message) ? 'The Gmail API is turned off in the Google Cloud project - see the link below' : e.code === 403 ? 'Gmail permission missing - tap Turn on again' : e.message; saveCfg();
+      if (manual) toast('Bryx watch: ' + cfg.bryx_err);
+    } finally { bryxBusy = false; if (made && !document.querySelector('.sheet') && !$('#respHost') && view === 'calls') render(); else if (view === 'settings') renderSettings(); }
+  }
+  function bryxSection() {
+    const on = !!cfg.bryx_watch, ok = on && hasGmail();
+    const line = (k, v2) => el('div', {class: 'row'}, el('span', {class: 'note', style: 'min-width:170px', text: k}), el('span', {text: v2}));
+    return el('div', {class: 'sec'}, el('h3', {text: 'Bryx dispatch watch'}),
+      el('p', {class: 'note', text: 'While this app is open (or was used in the last few minutes) it checks Gmail every minute for Bryx dispatch emails and puts each new call on the Calls list right away, with a pop-up and the Respond bar. It keeps the time, CAD ID, call type, street, units, box and coordinates - never the dispatch narrative. The hourly sync still runs as the backup and will not make a second copy.'}),
+      line('Status', !on ? 'Off' : !tok ? 'On - signs in at your next touch' : ok ? 'On' : 'On - needs Gmail permission (tap Turn on)'),
+      line('Last check', cfg.bryx_at ? fmtWhen(cfg.bryx_at) : '—'), line('Last new call', cfg.bryx_last ? fmtWhen(cfg.bryx_last) : '—'),
+      cfg.bryx_err ? el('p', {class: 'note', style: 'color:var(--bad)', text: 'Last problem: ' + cfg.bryx_err}) : null,
+      el('div', {class: 'row'},
+        !ok ? el('button', {type: 'button', class: 'btn primary', text: 'Turn on', onclick: async () => { cfg.bryx_watch = true; cfg.bryx_err = ''; saveCfg(); if (await signIn()) { if (hasGmail()) { toast('Bryx watch is on'); checkBryx(true); } else { cfg.bryx_err = 'Gmail permission was not given'; saveCfg(); } } renderSettings(); }}) : el('button', {type: 'button', class: 'btn', text: 'Check now', onclick: () => checkBryx(true)}),
+        on ? el('button', {type: 'button', class: 'btn ghost', text: 'Turn off', onclick: () => { cfg.bryx_watch = false; saveCfg(); renderSettings(); toast('Bryx watch off'); }}) : null),
+      el('p', {class: 'note', text: 'Google asks once for read-only Gmail access (it shows an "unverified app" warning because Station 93 is in testing - choose Continue). The app only searches messages from no-reply@bryx.com and never sends, changes or deletes email. If it says the Gmail API is off, an owner of the Google Cloud project turns it on at console.cloud.google.com > APIs & Services > Library > Gmail API (project station-93-515521).'}));
+  }
+
   async function pushTablet(manual) {
     if (manual) cfg.sync_requested_at = nowISO();
     const payload = {exported_at: nowISO(), app: 'Station 93 Tablet', device: 'tablet', sync_requested_at: cfg.sync_requested_at || null, pending_count: outbox.length, changes: outbox,
@@ -1252,6 +1317,7 @@ body:not(.locked) .gate{display:none}
             cfg.connected ? el('button', {type: 'button', class: 'btn ghost', text: 'Disconnect', onclick: () => confirmBox('Disconnect Google Drive?', 'Calls stay on this tablet. Changes not yet picked up by Claude stay waiting until you connect again.', 'Disconnect', () => { if (tok && window.google && google.accounts) try { google.accounts.oauth2.revoke(tok.t, () => {}); } catch (e) { /* ignore */ } tok = null; store.set('tok', null); cfg.connected = false; cfg.fromId = cfg.syncId = ''; saveCfg(); renderSettings(); })}) : null),
           el('label', {class: 'field'}, 'Google sign-in ID (from your Google Cloud project)', cid));
       })(),
+      bryxSection(),
       appSection(),
       el('div', {class: 'sec'}, el('h3', {text: 'Assessment sheets on this tablet'}), (() => { const keys = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('st93t.as.')) keys.push(k.slice(9)); } } catch (e) { /* blocked */ } return keys.length ? el('div', {class: 'row'}, keys.sort().map((c) => el('button', {type: 'button', class: 'opt', text: c, onclick: () => { const r = Object.values(S.reports).find((x) => x.cad === c); openAssessment(c, r && r.id, r && r.date); }}))) : el('p', {class: 'note', text: 'None saved on this tablet.'}); })())));
   }
@@ -1324,6 +1390,8 @@ body:not(.locked) .gate{display:none}
     setInterval(() => { if (document.visibilityState === 'visible' && swReg && !upd.ready) swReg.update().catch(() => {}); }, 30 * 60000);
   }
   syncNow(false);
+  setInterval(() => { if (document.visibilityState === 'visible') checkBryx(false); }, 60000); setTimeout(() => checkBryx(false), 4000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkBryx(false); });
   let lastTry = 0; const tick = () => { const gap = document.visibilityState === 'visible' ? 2 * 60000 : 5 * 60000; if (Date.now() - lastTry >= gap) { lastTry = Date.now(); syncNow(false); } };
   setInterval(tick, 30000);
   window.addEventListener('online', () => syncNow(false));
