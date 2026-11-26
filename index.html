@@ -318,7 +318,7 @@ body:not(.locked) .gate{display:none}
 <script>
 (function () {
   'use strict';
-  const APPV = '1.8.2';
+  const APPV = '1.8.3';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -727,9 +727,18 @@ body:not(.locked) .gate{display:none}
     const begInfo = el('span', {class: 'note'});
     const syncVeh = () => { const m = S.mileage[veh.value]; const last = m && (m.rows || [])[m.rows.length - 1]; begInfo.textContent = last ? `starts at ${last.end}` : ''; endH.hidden = veh.value !== 'EG906'; };
     veh.addEventListener('change', syncVeh); syncVeh();
-    body.append(el('div', {class: 'sec'}, el('h3', {}, 'Clear call', el('span', {class: 'grow'}), el('span', {class: 'note', text: r.cleared_at ? `Cleared ${fmtWhen(r.cleared_at)}${r.cleared_miles ? ' at ' + r.cleared_miles : ''}` : ''})),
-      el('div', {class: 'row'}, veh, endMi, endH, begInfo, el('button', {type: 'button', class: 'btn primary', text: 'Clear call', onclick: () => clearCall(veh.value, endMi.value.trim(), endH.value.trim())})),
-      el('p', {class: 'note', text: 'Adds the mileage row (purpose and CAD filled in) and marks the call cleared.'})));
+    const clrBtn = el('button', {type: 'button', class: 'btn primary', text: 'Clear call', onclick: () => clearCall(veh.value, endMi.value.trim(), endH.value.trim())});
+    const clrNote = el('p', {class: 'note'}); const clrTitle = el('span', {text: 'Clear call'});
+    body.append(el('div', {class: 'sec', id: 'clrSec'}, el('h3', {}, clrTitle, el('span', {class: 'grow'}), el('span', {class: 'note', text: r.cleared_at ? `Cleared ${fmtWhen(r.cleared_at)}${r.cleared_miles ? ' at ' + r.cleared_miles : ''}` : ''})),
+      el('div', {class: 'row'}, veh, endMi, endH, begInfo, clrBtn), clrNote));
+    // test calls: mileage is emptied and locked so a practice run can never add a row to an in-service apparatus log
+    const lockMiles = () => { const t = !!r.test;
+      [veh, endMi, endH].forEach((x) => { x.disabled = t; x.classList.toggle('locked', t); }); if (t) { endMi.value = ''; endH.value = ''; } else syncVeh();
+      if (t) begInfo.textContent = 'Mileage locked - test call';
+      clrTitle.textContent = t ? 'Clear test call (mileage locked)' : 'Clear call'; clrBtn.textContent = t ? 'Clear test call' : 'Clear call';
+      clrNote.textContent = t ? 'Test call: no mileage row is added to any apparatus log and your service status does not change.' : 'Adds the mileage row (purpose and CAD filled in) and marks the call cleared.'; };
+    const tgl = body.querySelector('#f-test'); if (tgl) tgl.addEventListener('change', lockMiles);
+    lockMiles();
     // Finish
     body.append(el('div', {class: 'sec'}, el('h3', {text: 'Finish this report'}),
       el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn', text: 'Assessment sheet' + (r.sheet ? ' · ' + r.sheet : ''), onclick: () => openAssessment(f.cad.value.trim(), r.id, f.date.value)}), el('button', {type: 'button', class: 'btn go', text: 'OK to Complete', onclick: okToComplete}), el('span', {class: 'note', text: 'Hands the call to Claude: review, narrative, Gmail draft, and FireWorks once 913 or C9 approves. Claude never sends or Completes without your OK in a chat.'})),
