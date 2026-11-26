@@ -11,7 +11,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Press+Start+2P&family=VT323&display=swap">
 <style>
 /* Layout: an apparatus-bay console. Left rail of large touch tabs on a tablet, bottom bar on a phone; work happens in one wide panel, a call opens as a full sheet. */
 :root{
@@ -275,6 +275,52 @@ body.bd-night .app{filter:brightness(.88)}
   .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 }
 @media (prefers-reduced-motion:no-preference){.call,.tile,.opt,.cat{transition:background .12s,border-color .12s}}
+button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover{filter:brightness(1.12)}
+.arc{position:fixed;inset:0;z-index:55;background:#120d0a;color:#F4EDE4;font:22px/1.2 'VT323',ui-monospace,monospace;display:flex;flex-direction:column;overflow:hidden}
+.arc .p2,.arc .px{font-family:'Press Start 2P',ui-monospace,monospace}
+.arc .a-scan{position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.035) 50%,transparent 50%);background-size:100% 4px;pointer-events:none;z-index:6}
+.arc .a-atop{position:relative;z-index:2;display:flex;align-items:center;gap:14px;padding:max(18px,env(safe-area-inset-top,0px)) 24px 0}
+.arc .a-atop h2{margin:0;font-size:16px;color:#E0524A;letter-spacing:1px}.arc .a-atop small{display:block;color:#c9bfb3;font-size:20px;margin-top:4px}
+.arc .a-blink{animation:arcblink 1.1s steps(1) infinite;color:#FFD23F;font-size:10px}
+.arc .a-vp{position:relative;z-index:2;flex:1;min-height:0;overflow:hidden;margin:16px 0 0;touch-action:pan-y}
+.arc .a-track{display:flex;height:100%;transition:transform .36s steps(6)}
+.arc .a-card{flex:0 0 100%;box-sizing:border-box;padding:0 24px 8px;height:100%}
+.arc .cin{max-width:860px;margin:0 auto;height:100%;box-sizing:border-box;background:#1f1712;border:6px solid var(--c);box-shadow:8px 8px 0 #000;padding:20px 22px;display:flex;flex-direction:column;gap:14px;overflow:auto}
+.arc .a-lbl{font-size:11px;color:var(--c)}.arc .a-ttl{font-size:18px;margin:0;line-height:1.4}
+.arc .a-herobox{display:flex;gap:24px;flex-wrap:wrap;align-items:center}
+.arc .a-hstage{position:relative;flex:0 0 220px;height:250px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;background:#2b1418;border:4px solid #F28C28;overflow:hidden}
+.arc .a-hflames{position:absolute;left:8px;right:8px;bottom:22px;height:200px;display:flex;align-items:flex-end;gap:3px;opacity:.85}
+.arc .a-fl{flex:1;display:flex;flex-direction:column;transform-origin:bottom;animation:arcflick .55s steps(3) infinite}.arc .a-fl i{display:block}
+.arc .a-fl i:nth-child(1){flex:1;background:#FFD23F}.arc .a-fl i:nth-child(2){flex:2;background:#F28C28}.arc .a-fl i:nth-child(3){flex:3;background:#E0524A}
+.arc .a-avatar{position:relative;animation:archover 1.6s steps(4) infinite;margin-bottom:4px}
+.arc .a-pedestal{position:relative;width:180px;height:16px;background:#3a1a2a;border:4px solid #6b1f3a;margin-bottom:6px}
+.arc .a-htext{flex:1;min-width:220px;display:flex;flex-direction:column;gap:8px}
+.arc .a-hname{font-size:20px;line-height:1.4}.arc .a-hrank{color:#FFD23F;font-size:28px;display:flex;align-items:center;gap:8px}.arc .a-hrank input{flex:1;min-width:0}.arc .a-hsub{color:#c9bfb3}
+.arc input.rk{font:inherit;color:#FFD23F;background:transparent;border:3px dashed #4a3a2e;padding:2px 8px;width:100%;box-sizing:border-box}
+.arc .a-chip{align-self:flex-start;font-size:10px;padding:8px 10px;border:3px solid currentColor}
+.arc .a-chip.in{color:#3FB26B;background:#0f2a18}.arc .a-chip.out{color:#ff7a70;background:#2a0f0f}.arc .a-chip.ns{color:#c9bfb3}
+.arc .a-kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.arc .a-kv div{background:#2b211a;border:3px solid #4a3a2e;padding:10px 12px}.arc .a-kv span{display:block;color:#a99e92;font-size:18px}
+.arc .a-bar{display:flex;align-items:center;gap:12px}.arc .a-bl{flex:0 0 190px}
+.arc .a-cells{flex:1;display:flex;gap:3px;height:26px;padding:3px;background:#2b211a;border:3px solid #4a3a2e;box-sizing:border-box}.arc .a-cells i{flex:1;background:#3a2a20}
+.arc .a-bn{flex:0 0 52px;text-align:right;font-size:14px}
+.arc .a-badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.arc .a-bdg{background:#16110d;border:4px solid #4a3a2e;padding:12px;display:flex;flex-direction:column;gap:6px}
+.arc .a-bdg b{font-size:10px;color:#a99e92}.arc .a-bdg strong{font-size:12px;line-height:1.5}.arc .a-bdg small{color:#c9bfb3;font-size:19px}
+.arc .a-bdg.on{border-color:#FFD23F}.arc .a-bdg.on b{color:#FFD23F}.arc .a-bdg.warn{border-color:#F28C28}.arc .a-bdg.warn b{color:#F28C28}
+.arc .px{font-size:11px;color:#120d0a;background:#FFD23F;border:0;padding:14px 16px;box-shadow:4px 4px 0 #7a2a12;cursor:pointer;min-height:44px}
+.arc .px:active{transform:translate(4px,4px);box-shadow:none}.arc .px.red{background:#E0524A;color:#fff}.arc .px.green{background:#3FB26B}.arc .px.blue{background:#4A8FE0;color:#fff}
+.arc .a-moves{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.arc .a-moves .px{padding:24px 10px}
+.arc .a-nav{position:relative;z-index:3;display:flex;justify-content:center;align-items:center;gap:8px;padding:12px 0 128px}
+.arc .a-dot{width:36px;height:44px;border:0;background:none;padding:12px 8px;cursor:pointer}.arc .a-dot i{display:block;width:20px;height:20px;background:#4a3a2e}.arc .a-dot.on i{background:#FFD23F}
+.arc .a-floor{position:absolute;left:0;right:0;bottom:0;height:120px;display:flex;align-items:flex-end;z-index:1;pointer-events:none}
+.arc .a-ember{position:absolute;bottom:110px;width:6px;height:6px;background:#F28C28;animation:arcember 3.2s steps(16) infinite;z-index:1;pointer-events:none}
+@keyframes arcflick{0%{transform:scaleY(1)}25%{transform:scaleY(.7)}50%{transform:scaleY(1.12)}75%{transform:scaleY(.85)}100%{transform:scaleY(1)}}
+@keyframes arcblink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes arcember{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-420px);opacity:0}}
+@keyframes archover{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@media (max-width:640px){.arc .a-card{padding:0 10px 8px}.arc .cin{padding:14px}.arc .a-hstage{flex-basis:100%;height:200px}.arc .a-bl{flex-basis:110px}.arc .a-atop .a-blink{display:none}.arc .a-nav{padding-bottom:100px}.arc .a-floor{height:90px}}
+@media (prefers-reduced-motion:reduce){.arc *{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body class="locked">
@@ -308,7 +354,7 @@ body.bd-night .app{filter:brightness(.88)}
 </div>
 <div class="app">
   <nav class="rail" aria-label="Sections">
-    <div class="badge">AVFD</div>
+    <button class="badge" id="avfdBtn" type="button" aria-label="Open the AVFD dashboard" title="AVFD dashboard">AVFD</button>
     <button class="tabbtn on" data-view="calls" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Calls</button>
     <button class="tabbtn" data-view="mileage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4M12 5V3"/></svg>Mileage</button>
     <button class="tabbtn" data-view="crew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14.8c1.8.8 3 2.6 3.5 5.2"/></svg>Crew</button>
@@ -345,7 +391,7 @@ body.bd-night .app{filter:brightness(.88)}
 <script>
 (function () {
   'use strict';
-  const APPV = '2.5.1';
+  const APPV = '2.6.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -976,6 +1022,77 @@ body.bd-night .app{filter:brightness(.88)}
     }
     draw(); tvTimer = setInterval(draw, 30000);
   }
+
+  // ----- 2.6.0 AVFD arcade dashboard (AVFD button) -----
+  const PX_AV = '<rect x="4" y="0" width="6" height="1" fill="#E0524A"/><rect x="2" y="1" width="10" height="1" fill="#E0524A"/><rect x="1" y="2" width="4" height="1" fill="#E0524A"/><rect x="5" y="2" width="2" height="1" fill="#FFD23F"/><rect x="7" y="2" width="6" height="1" fill="#E0524A"/><rect x="1" y="3" width="4" height="1" fill="#E0524A"/><rect x="5" y="3" width="2" height="1" fill="#FFD23F"/><rect x="7" y="3" width="6" height="1" fill="#E0524A"/><rect x="0" y="4" width="14" height="2" fill="#E0524A"/><rect x="3" y="6" width="8" height="1" fill="#F2B48C"/><rect x="3" y="7" width="8" height="1" fill="#F2B48C"/><rect x="4" y="7" width="1" height="1" fill="#1A1410"/><rect x="9" y="7" width="1" height="1" fill="#1A1410"/><rect x="3" y="8" width="8" height="2" fill="#F2B48C"/><rect x="6" y="9" width="2" height="1" fill="#9C4A3A"/><rect x="4" y="10" width="6" height="1" fill="#F2B48C"/><rect x="2" y="11" width="10" height="1" fill="#3A3F4A"/><rect x="1" y="12" width="12" height="2" fill="#3A3F4A"/><rect x="3" y="12" width="1" height="2" fill="#FFD23F"/><rect x="10" y="12" width="1" height="2" fill="#FFD23F"/>';
+  const PX_X = '<rect x="2" y="0" width="7" height="1" fill="#E0524A"/><rect x="3" y="1" width="5" height="1" fill="#E0524A"/><rect x="0" y="2" width="1" height="1" fill="#E0524A"/><rect x="4" y="2" width="3" height="1" fill="#E0524A"/><rect x="10" y="2" width="1" height="1" fill="#E0524A"/><rect x="0" y="3" width="2" height="1" fill="#E0524A"/><rect x="5" y="3" width="1" height="1" fill="#FFD23F"/><rect x="9" y="3" width="2" height="1" fill="#E0524A"/><rect x="0" y="4" width="3" height="3" fill="#E0524A"/><rect x="8" y="4" width="3" height="3" fill="#E0524A"/><rect x="4" y="4" width="3" height="1" fill="#FFD23F"/><rect x="3" y="5" width="5" height="1" fill="#FFD23F"/><rect x="4" y="6" width="3" height="1" fill="#FFD23F"/><rect x="0" y="7" width="2" height="1" fill="#E0524A"/><rect x="5" y="7" width="1" height="1" fill="#FFD23F"/><rect x="9" y="7" width="2" height="1" fill="#E0524A"/><rect x="0" y="8" width="1" height="1" fill="#E0524A"/><rect x="4" y="8" width="3" height="1" fill="#E0524A"/><rect x="10" y="8" width="1" height="1" fill="#E0524A"/><rect x="3" y="9" width="5" height="1" fill="#E0524A"/><rect x="2" y="10" width="7" height="1" fill="#E0524A"/>';
+  const pxEl = (vb, w, h, rects, label) => { const d = el('span', {style: 'display:inline-block;line-height:0'}); d.innerHTML = `<svg viewBox="${vb}" width="${w}" height="${h}" shape-rendering="crispEdges" ${label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"'}>${rects}</svg>`; return d; };
+  const flameCols = (n, base, spread, seed) => Array.from({length: n}, (_, k) => el('div', {class: 'a-fl', style: `height:${base + ((k * seed) % spread)}px;animation-delay:${((k * 13) % 6) / 10}s`}, el('i'), el('i'), el('i')));
+  let arcIdx = store.get('arc_idx', 0) || 0;
+  function arcBadges() {
+    const R = myReports(); const overdue = R.filter((r) => ['Needs info', 'Draft staged'].includes(r.stage) && ageDays(r) >= 7).length;
+    const streak = overdue ? 0 : Math.max(0, Math.round((Date.parse(isoToday()) - Date.parse(cfg.streak_since || isoToday())) / 86400000));
+    const openN = R.filter((r) => OPEN.includes(r.stage)).length; const done = R.filter((r) => r.stage === 'Completed').length;
+    const months = Object.keys(S.mileage_archive || {}).length; const wkAgo = Date.now() - 7 * 86400000;
+    const checkDays = new Set(Object.values(S.checks || {}).filter((c) => Date.parse(c.at) >= wkAgo).map((c) => isoDay(new Date(c.at)))).size;
+    const recent = R.filter((r) => r.date && ageDays(r) <= 30); const zoned = recent.filter((r) => r.zone && r.zone !== '—').length;
+    return [
+      {n: 'CLEAN STREAK', rule: 'No report 7+ days old, 7 days running', st: overdue ? 'PAUSED' : streak >= 7 ? 'EARNED' : `${streak}/7 DAYS`, on: !overdue && streak >= 7, warn: !!overdue},
+      {n: 'CLEAN SLATE', rule: 'Every report done', st: openN ? `${openN} OPEN` : 'EARNED', on: !openN},
+      {n: 'PAPER TRAIL', rule: '10 reports Completed', st: done >= 10 ? 'EARNED' : `${done}/10`, on: done >= 10},
+      {n: 'ROAD WARRIOR', rule: 'A full month of mileage closed out', st: months ? 'EARNED' : 'LOCKED', on: !!months},
+      {n: 'RIG READY', rule: 'Apparatus check 7 days running', st: checkDays >= 7 ? 'EARNED' : `${checkDays}/7 DAYS`, on: checkDays >= 7},
+      {n: 'ZONE MASTER', rule: 'Every call in the last 30 days has a zone', st: recent.length && zoned === recent.length ? 'EARNED' : `${zoned}/${recent.length}`, on: recent.length > 0 && zoned === recent.length}];
+  }
+  function openArcade() {
+    $('#arcHost') && $('#arcHost').remove();
+    const host = el('div', {class: 'arc', id: 'arcHost', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'AVFD dashboard'}); document.body.append(host);
+    const close = () => { host.remove(); document.removeEventListener('keydown', key); };
+    const then = (fn) => () => { close(); fn(); };
+    const key = (e) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') goTo(arcIdx + 1); else if (e.key === 'ArrowLeft') goTo(arcIdx - 1); };
+    document.addEventListener('keydown', key);
+    const m = meRec(); const u = me() || {}; const R = myReports(); const open = R.filter((r) => OPEN.includes(r.stage));
+    const now = new Date(); const mFrom = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-01`; const mon = R.filter((r) => (r.date || '') >= mFrom); const monDone = mon.filter((r) => r.stage === 'Completed').length;
+    const st = (m && m.status) || 'Not set'; const stc = st === 'In service' ? 'in' : st === 'Out of service' ? 'out' : 'ns';
+    const kv = (pairs) => el('div', {class: 'a-kv'}, pairs.map(([k, v2]) => el('div', {}, el('span', {text: k}), v2)));
+    const card = (c, lbl, ttl, ...kids) => el('section', {class: 'a-card', 'aria-label': ttl}, el('div', {class: 'cin', style: '--c:' + c}, el('div', {class: 'a-lbl p2', text: lbl}), el('h3', {class: 'a-ttl p2', text: ttl}), ...kids));
+    const rk = el('input', {class: 'rk', type: 'text', value: cfg.rank || '', placeholder: 'Rank / title (tap to set)', 'aria-label': 'Your rank or title'});
+    rk.addEventListener('change', () => { cfg.rank = rk.value.trim(); saveCfg(); toast('Saved'); });
+    const mx = Math.max(1, ...OPEN.map((s2) => open.filter((r) => r.stage === s2).length));
+    const SC = {'Needs info': '#F28C28', 'Draft staged': '#FFD23F', 'Awaiting C9': '#4A8FE0', 'Ready to Complete': '#3FB26B', 'Blocked': '#E0524A'};
+    const bars = OPEN.map((s2) => { const n = open.filter((r) => r.stage === s2).length; const on = Math.round(n / mx * 10); return el('button', {type: 'button', class: 'a-bar', style: 'background:none;border:0;color:inherit;font:inherit;padding:0;cursor:pointer;text-align:left', onclick: then(() => { filter = s2; store.set('filter', s2); show('calls'); })}, el('span', {class: 'a-bl', text: s2}), el('span', {class: 'a-cells'}, Array.from({length: 10}, (_, k) => el('i', {style: k < on ? 'background:' + SC[s2] : ''}))), el('b', {class: 'a-bn p2', style: 'color:' + SC[s2], text: String(n)})); });
+    const overdue = R.filter((r) => ['Needs info', 'Draft staged'].includes(r.stage) && ageDays(r) >= 7).length;
+    const ap = Object.values(S.apparatus).filter((a) => a.unit).sort((a, b) => a.unit.localeCompare(b.unit));
+    const crewOn = (un) => Object.values(S.crew).filter((c) => units(c.assigned).includes(un)).map((c) => lastName(c.name));
+    const cards = [
+      card('#E0524A', 'PLAYER 1', 'HERO', el('div', {class: 'a-herobox'},
+        el('div', {class: 'a-hstage'}, el('div', {class: 'a-hflames', 'aria-hidden': 'true'}, flameCols(16, 90, 110, 41)), el('div', {class: 'a-avatar'}, pxEl('0 0 14 14', 150, 150, PX_AV, 'Pixel firefighter avatar')), el('div', {class: 'a-pedestal', 'aria-hidden': 'true'})),
+        el('div', {class: 'a-htext'}, el('div', {class: 'a-hname p2', text: (ME || u.username || 'Firefighter').toUpperCase()}), el('div', {class: 'a-hrank'}, myNum() ? '#' + myNum() + ' · ' : '', rk), el('div', {class: 'a-hsub', text: 'Argyle Fire · Station 93'}), el('div', {class: 'a-chip p2 ' + stc, text: '● ' + st.toUpperCase()}))),
+        kv([['ROLE', (roleOf(u) || '').replace(/^./, (c) => c.toUpperCase())], ['ON UNIT', units(m && m.assigned).join(', ') || 'None assigned'], ['DEVICE', cfg.device_name || 'Not named (Settings)'], ['OPEN REPORTS', String(open.length)]])),
+      card('#F28C28', 'STAGE 2', 'REPORT QUEST', bars, kv([['THIS MONTH', `${monDone} of ${mon.length} done`], ['STREAK', overdue ? `Paused - ${overdue} report${overdue > 1 ? 's' : ''} 7+ days old` : 'Active']])),
+      card('#FFD23F', 'STAGE 3', 'BADGES', el('div', {class: 'a-badges'}, arcBadges().map((b) => el('div', {class: 'a-bdg' + (b.on ? ' on' : b.warn ? ' warn' : '')}, el('b', {class: 'p2', text: b.st}), el('strong', {class: 'p2', text: b.n}), el('small', {text: b.rule}))))),
+      card('#9FD4F2', 'STAGE 4', 'FLEET', ap.length ? kv(ap.map((a) => { const rd = lastReading(a.unit); return [a.unit, el('div', {style: 'border:0;padding:0;background:none'}, el('div', {style: 'border:0;padding:0;background:none;color:' + (a.status === 'In service' ? '#3FB26B' : a.status === 'Out of service' ? '#ff7a70' : '#c9bfb3'), text: a.status || 'Not set'}), el('div', {style: 'border:0;padding:0;background:none', text: crewOn(a.unit).join(', ') || 'No crew assigned'}), rd != null ? el('div', {style: 'border:0;padding:0;background:none;color:#a99e92', text: 'Last reading ' + rd}) : null)]; })) : el('p', {text: 'No apparatus yet - add them on the Crew tab.'}), el('div', {}, el('button', {type: 'button', class: 'px', text: 'CREW TAB ▶', onclick: then(() => show('crew'))}))),
+      card('#3FB26B', 'STAGE 5', 'SYSTEM', kv([['VERSION', APPV + (upd.ready ? ` (update ${upd.version || 'ready'})` : '')], ['LAST SYNC', cfg.last_sync ? fmtWhen(cfg.last_sync) : 'Never'], ['SHARED FILE', cfg.shared_at ? `${fmtWhen(cfg.shared_at)}${cfg.shared_by ? ' · ' + cfg.shared_by : ''}` : 'Not created yet'], ['RETENTION', '30 days']]),
+        el('div', {class: 'row', style: 'gap:14px'}, el('button', {type: 'button', class: 'px green', text: 'SYNC NOW', onclick: () => { syncNow(true); toast('Syncing…'); }}), el('button', {type: 'button', class: 'px', text: upd.ready ? 'INSTALL UPDATE' : 'CHECK FOR UPDATE', onclick: then(() => { show('settings'); upd.ready ? installUpdate() : checkUpdate(); })}))),
+      card('#4A8FE0', 'STAGE 6', 'QUICK MOVES', el('div', {class: 'a-moves'}, el('button', {type: 'button', class: 'px red', text: '+ NEW CALL', onclick: then(() => { show('calls'); openCall(null); })}), el('button', {type: 'button', class: 'px', text: 'MILEAGE', onclick: then(() => show('mileage'))}), el('button', {type: 'button', class: 'px blue', text: 'ZONE MAP', onclick: then(() => show('map'))}), el('button', {type: 'button', class: 'px green', text: 'STATION TV', onclick: then(openTV)}), el('button', {type: 'button', class: 'px', text: 'STATS', onclick: then(() => show('stats'))}), el('button', {type: 'button', class: 'px', text: 'SETTINGS', onclick: then(() => show('settings'))})))];
+    const N = cards.length; const track = el('div', {class: 'a-track'}, cards);
+    const dots = cards.map((c, k) => el('button', {type: 'button', class: 'a-dot', 'aria-label': 'Show ' + c.getAttribute('aria-label'), onclick: () => goTo(k)}, el('i')));
+    function goTo(n) { arcIdx = ((n % N) + N) % N; store.set('arc_idx', arcIdx); track.style.transform = `translateX(${-arcIdx * 100}%)`; dots.forEach((d, k) => { d.classList.toggle('on', k === arcIdx); d.setAttribute('aria-current', k === arcIdx ? 'true' : 'false'); }); cards.forEach((c, k) => { c.inert = k !== arcIdx; c.style.opacity = k === arcIdx ? '1' : '.35'; }); }
+    const vp = el('div', {class: 'a-vp'}, track); let sx = null, sy = null;
+    vp.addEventListener('pointerdown', (e) => { sx = e.clientX; sy = e.clientY; });
+    vp.addEventListener('pointerup', (e) => { if (sx == null) return; const dx = e.clientX - sx, dy = e.clientY - sy; sx = null; if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) goTo(arcIdx + (dx < 0 ? 1 : -1)); });
+    vp.addEventListener('pointercancel', () => { sx = null; });
+    const W = Math.max(innerWidth, 360);
+    host.append(el('div', {class: 'a-scan', 'aria-hidden': 'true'}),
+      ...Array.from({length: 10}, (_, k) => el('div', {class: 'a-ember', 'aria-hidden': 'true', style: `left:${((k + 0.5) / 10 * 100).toFixed(1)}%;animation-delay:${(k * 0.37 % 3.2).toFixed(2)}s`})),
+      el('div', {class: 'a-atop'}, pxEl('0 0 11 11', 40, 40, PX_X), el('div', {}, el('h2', {class: 'p2', text: 'AVFD · STATION 93'}), el('small', {text: 'ARGYLE FIRE COMMAND CONSOLE'})), el('span', {class: 'grow', style: 'flex:1'}), el('span', {class: 'a-blink p2', 'aria-hidden': 'true', text: '◀ SWIPE ▶'}), el('button', {type: 'button', class: 'px red', 'aria-label': 'Close dashboard', text: 'X', onclick: close})),
+      vp,
+      el('div', {class: 'a-nav'}, el('button', {type: 'button', class: 'px', 'aria-label': 'Previous card', text: '◀', onclick: () => goTo(arcIdx - 1)}), dots, el('button', {type: 'button', class: 'px', 'aria-label': 'Next card', text: '▶', onclick: () => goTo(arcIdx + 1)})),
+      el('div', {class: 'a-floor', 'aria-hidden': 'true'}, flameCols(Math.min(80, Math.round(W / 20)), 50, 70, 37)));
+    goTo(arcIdx); host.querySelector('.a-atop .px').focus();
+  }
+  $('#avfdBtn').addEventListener('click', openArcade);
+  document.querySelector('.top h1').addEventListener('click', openArcade); document.querySelector('.top h1').style.cursor = 'pointer'; document.querySelector('.top h1').title = 'AVFD dashboard';
 
   // ----- #5 apparatus checks + maintenance due by mileage -----
   const CHECK_ITEMS = ['Fluids (oil, coolant, transmission)', 'Fuel 3/4 or more', 'Lights and siren', 'Tires and body', 'O2 cylinders full', 'AED ready, pads in date', 'SCBA bottles full', 'Tools and equipment in place', 'Radio and charger'];
