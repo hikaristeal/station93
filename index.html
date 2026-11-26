@@ -344,7 +344,7 @@ body.bd-night .app{filter:brightness(.88)}
 <script>
 (function () {
   'use strict';
-  const APPV = '2.4.1';
+  const APPV = '2.4.2';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -1669,13 +1669,31 @@ body.bd-night .app{filter:brightness(.88)}
     if (gmPick) gmPick.setMap(null); gmPick = mapMarker ? new google.maps.Marker({map: gmap, position: {lat: mapMarker[0], lng: mapMarker[1]}, title: 'Looked-up point'}) : null;
     if (mapMarker) gmap.panTo({lat: mapMarker[0], lng: mapMarker[1]});
   }
+  let mapsUnlockedUntil = 0, mapsPinFails = 0, mapsPinWait = 0;
+  function unlockMapsKey() {
+    const u = me(); if (!u) { toast('Sign in first'); return; }
+    const usePin = !!u.pin; const inp = el('input', {type: 'password', inputmode: usePin ? 'numeric' : 'text', maxlength: usePin ? '4' : null, autocomplete: 'off', placeholder: usePin ? '4-digit PIN' : 'Password', style: 'max-width:200px;font-size:20px;letter-spacing:.2em'});
+    const msg = el('p', {class: 'note', role: 'alert'});
+    const go = async () => {
+      if (Date.now() < mapsPinWait) { msg.textContent = `Too many tries - wait ${Math.ceil((mapsPinWait - Date.now()) / 1000)} s.`; return; }
+      const ok = usePin ? await checkPin(u, inp.value) : !!(await verify(u.username, inp.value));
+      if (!ok) { mapsPinFails++; inp.value = ''; if (mapsPinFails >= 5) { mapsPinFails = 0; mapsPinWait = Date.now() + 30000; msg.textContent = 'Wrong 5 times - wait 30 seconds.'; } else msg.textContent = usePin ? 'Wrong PIN.' : 'Wrong password.'; return; }
+      mapsPinFails = 0; mapsUnlockedUntil = Date.now() + 2 * 60000; closeModal(); renderSettings(); toast('Unlocked for 2 minutes');
+    };
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    modal(el('div', {class: 'box', role: 'dialog', 'aria-label': 'Unlock the Google Maps key'}, el('h2', {text: 'Unlock the Maps key'}), el('p', {class: 'note', text: `${u.username}, enter your ${usePin ? 'lock PIN' : 'password'} to change or remove the key.`}), inp, msg,
+      el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn ghost', text: 'Cancel', onclick: closeModal}), el('button', {type: 'button', class: 'btn primary', text: 'Unlock', onclick: go}))));
+    setTimeout(() => inp.focus(), 50);
+  }
   function mapsSection() {
-    const k = el('input', {type: 'password', value: cfg.maps_key || '', placeholder: 'AIza…', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Google Maps key', style: 'max-width:420px'});
+    const k = el('input', {type: 'password', value: '', placeholder: cfg.maps_key ? 'Paste a new key' : 'AIza…', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Google Maps key', style: 'max-width:420px'});
     return el('div', {class: 'sec'}, el('h3', {text: 'Google Maps'}),
       el('p', {class: 'note', text: 'Adds Street and Satellite maps to the Map tab, under the same district and zone lines (the station map stays and works offline). The key is shared with your other Station 93 devices through a small settings file in your Drive (sync/station93-settings.json) - never in the app code, the shared data file, backups or anything Claude reads.'}),
       el('div', {class: 'row'}, el('span', {class: 'note', style: 'min-width:170px', text: 'Status'}), el('span', {text: cfg.maps_key ? (cfg.maps_err ? 'Key saved - problem: ' + cfg.maps_err : (cfg.settings_remote_at === cfg.maps_key_at ? 'Key saved - shared with your other devices' : 'Key saved - shares at the next sync')) : 'No key'})),
-      el('div', {class: 'row'}, k, el('button', {type: 'button', class: 'btn primary', text: 'Save key', onclick: () => { const v2 = k.value.trim(); if (!/^[A-Za-z0-9_-]{30,60}$/.test(v2)) { toast('That does not look like a Google Maps key'); return; } const had = !!(window.google && google.maps); cfg.maps_key = v2; cfg.maps_key_at = nowISO(); cfg.maps_err = ''; saveCfg(); schedulePush(); toast(had ? 'Saved - restart the app to use the new key' : 'Key saved'); renderSettings(); }}),
-        cfg.maps_key ? el('button', {type: 'button', class: 'btn ghost', text: 'Remove', onclick: () => { cfg.maps_key = ''; cfg.maps_key_at = nowISO(); saveCfg(); schedulePush(); mapMode = 'station'; store.set('mapMode', 'station'); renderSettings(); toast('Key removed'); }}) : null),
+      !cfg.maps_key || mapsUnlockedUntil > Date.now() ? el('div', {class: 'row'}, k, el('button', {type: 'button', class: 'btn primary', text: 'Save and lock', onclick: () => { const v2 = k.value.trim(); if (!/^[A-Za-z0-9_-]{30,60}$/.test(v2)) { toast('That does not look like a Google Maps key'); return; } const had = !!(window.google && google.maps); cfg.maps_key = v2; cfg.maps_key_at = nowISO(); cfg.maps_err = ''; saveCfg(); schedulePush(); mapsUnlockedUntil = 0; toast(had ? 'Saved and locked - restart the app to use the new key' : 'Key saved and locked'); renderSettings(); }}),
+        cfg.maps_key ? el('button', {type: 'button', class: 'btn ghost', text: 'Remove', onclick: () => confirmBox('Remove the Google Maps key?', 'Street and Satellite maps stop on every device at their next sync.', 'Remove', () => { cfg.maps_key = ''; cfg.maps_key_at = nowISO(); saveCfg(); schedulePush(); mapsUnlockedUntil = 0; mapMode = 'station'; store.set('mapMode', 'station'); renderSettings(); toast('Key removed'); })}) : null,
+        cfg.maps_key ? el('button', {type: 'button', class: 'btn ghost', text: 'Lock again', onclick: () => { mapsUnlockedUntil = 0; renderSettings(); }}) : null)
+        : el('div', {class: 'row'}, el('span', {class: 'pill', text: '🔒 Key saved and locked'}), el('button', {type: 'button', class: 'btn', text: 'Unlock to change', onclick: () => unlockMapsKey()})),
       el('p', {class: 'note', text: 'Lock the key down in Google Cloud > APIs & Services > Credentials: Websites = https://hikaristeal.github.io/*, APIs = Maps JavaScript API (add Geocoding and Maps Static later if we use them), and set a billing budget alert.'}));
   }
   function drawMap() {
