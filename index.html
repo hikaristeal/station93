@@ -395,7 +395,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
 <script>
 (function () {
   'use strict';
-  const APPV = '2.8.0';
+  const APPV = '2.9.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -544,6 +544,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     for (const [f, d] of seq) { if (f) { const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f; const e = c.createGain(); e.gain.setValueAtTime(0, t); e.gain.linearRampToValueAtTime(1, t + .02); e.gain.setValueAtTime(1, t + d - .03); e.gain.linearRampToValueAtTime(0, t + d); o.connect(e); e.connect(g); o.start(t); o.stop(t + d + .02); } t += d; }
     return new Promise((res) => setTimeout(res, (t - c.currentTime) * 1000 + 150));
   }
+  function playKind(kind, vol) { if (String(kind).indexOf('u:') === 0) { const t = tonesGet().list.find((x) => 'u:' + x.id === kind); return t ? playToneObj(t, vol) : playTone('two', vol); } return playTone(kind, vol); }
   const ABBR = {N: 'North', S: 'South', E: 'East', W: 'West', RD: 'Road', DR: 'Drive', LN: 'Lane', ST: 'Street', AVE: 'Avenue', BLVD: 'Boulevard', CT: 'Court', CIR: 'Circle', PL: 'Place', HWY: 'Highway', PKWY: 'Parkway', TRL: 'Trail', LP: 'Loop', CR: 'County Road', SR: 'State Road', US: 'U.S.', MM: 'mile marker', I: 'Interstate', APT: 'apartment', LOT: 'lot'};
   const UNITN = {EG: 'Engine', TA: 'Tanker', MD: 'Medic', BATT: 'Battalion', RE: 'Rescue', BR: 'Brush', BRUSH: 'Brush', RESCUE: 'Rescue', CH: 'Chief', QRV: 'Q R V'};
   const digits = (n) => String(n).split('').join(' ');
@@ -559,7 +560,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
   function alertCall(id, force) {
     const o = aset(); const r = S.reports[id]; if (!r || (!force && (alerted.has(id) || !cfg.notify_armed))) return; alerted.add(id);
     if (!o.tone && !o.readCall) return;
-    alertBusy = alertBusy.then(async () => { if (o.tone) await playTone(o.kind, o.vol); if (o.readCall) { const w = callWords(r); await speak(w, o); await new Promise((x) => setTimeout(x, 600)); await speak(w, o); } });
+    alertBusy = alertBusy.then(async () => { if (o.tone) await playKind(toneFor(o, r), o.vol); if (o.readCall) { const w = callWords(r); await speak(w, o); await new Promise((x) => setTimeout(x, 600)); await speak(w, o); } });
   }
   const STAMP_SAY = {enroute: 'en route', onscene: 'on scene', ptcontact: 'patient contact', cleared: 'clear'};
   function sayResponse(r, k, at) {
@@ -568,10 +569,129 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     const unit = on.find((u) => mine.includes(u)) || on.find((u) => u !== 'AVFD' && u !== 'POV') || ''; const d = new Date(at || Date.now());
     alertBusy = alertBusy.then(() => speak(`${unit ? sayUnit(unit) + ', ' : ''}${STAMP_SAY[k]}, ${pad2(d.getHours())} ${pad2(d.getMinutes())}.${r.test ? ' Test.' : ''}`, o));
   }
+  // ----- tone builder: your own alert tones, shared with your other devices through sync/station93-tones.json -----
+  const TONE_MAX = 10, REC_MAX = 450000;
+  const tonesGet = () => Object.assign({list: [], at: ''}, store.get('tones', {}));
+  const tonesSet = (list) => { store.set('tones', {list, at: nowISO()}); };
+  const WAVES = {sine: 'Smooth (sine)', square: 'Hard (square)', triangle: 'Soft (triangle)', sawtooth: 'Buzzy (saw)'};
+  const STYLES = {two: 'Two-tone page', hilo: 'Hi-lo / warble', beep: 'Beeps', seq: 'Free sequence', file: 'Recording'};
+  const newTone = () => ({id: 't' + Date.now().toString(36), name: 'My tone', style: 'two', wave: 'sine', vol: 1, gap: 0.4, repeat: 1,
+    a: {f: 853.2, d: 1}, b: {f: 1185.2, d: 3}, hi: 960, lo: 770, hd: 0.5, n: 4, bf: 1000, bd: 0.25, bg: 0.15, bn: 3, steps: [{f: 1000, d: 0.3}, {f: 0, d: 0.2}, {f: 1300, d: 0.3}], data: '', file: ''});
+  const clampN = (v, lo, hi, dflt) => { v = Number(v); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : dflt; };
+  function toneSeq(t) {
+    let s;
+    if (t.style === 'hilo') { s = []; for (let i = 0; i < clampN(t.n, 1, 20, 4); i++) s.push([clampN(t.hi, 100, 4000, 960), clampN(t.hd, .05, 3, .5)], [clampN(t.lo, 100, 4000, 770), clampN(t.hd, .05, 3, .5)]); }
+    else if (t.style === 'beep') { s = []; for (let i = 0; i < clampN(t.bn, 1, 20, 3); i++) { if (i) s.push([0, clampN(t.bg, 0, 3, .15)]); s.push([clampN(t.bf, 100, 4000, 1000), clampN(t.bd, .03, 3, .25)]); } }
+    else if (t.style === 'seq') s = (t.steps || []).slice(0, 40).map((x) => [x.f ? clampN(x.f, 100, 4000, 1000) : 0, clampN(x.d, .03, 5, .3)]);
+    else s = [[clampN(t.a && t.a.f, 100, 4000, 853.2), clampN(t.a && t.a.d, .1, 5, 1)], [0, .05], [clampN(t.b && t.b.f, 100, 4000, 1185.2), clampN(t.b && t.b.d, .1, 8, 3)]];
+    let out = []; const rep = clampN(t.repeat, 1, 5, 1); for (let r = 0; r < rep; r++) { if (r) out.push([0, .5]); out = out.concat(s); } return out;
+  }
+  let toneNow = null;
+  function stopTone() { if (toneNow) { try { toneNow(); } catch (e) { /* done */ } toneNow = null; } }
+  function playSeq(seq, wave, vol) {
+    const c = audio(); if (!c) return Promise.resolve(); stopTone();
+    let t = c.currentTime + .05; const g = c.createGain(); g.gain.value = Math.max(0, Math.min(1, vol)) * .35; g.connect(c.destination); const oscs = [];
+    for (const [f, d] of seq) { if (f) { const o = c.createOscillator(); o.type = wave || 'sine'; o.frequency.value = f; const e = c.createGain(); e.gain.setValueAtTime(0, t); e.gain.linearRampToValueAtTime(1, t + .02); e.gain.setValueAtTime(1, t + Math.max(.03, d - .03)); e.gain.linearRampToValueAtTime(0, t + d); o.connect(e); e.connect(g); o.start(t); o.stop(t + d + .02); oscs.push(o); } t += d; }
+    return new Promise((res) => { const tm = setTimeout(() => { toneNow = null; res(); }, (t - c.currentTime) * 1000 + 150); toneNow = () => { clearTimeout(tm); oscs.forEach((o) => { try { o.stop(); } catch (e) { /* stopped */ } }); g.disconnect(); res(); }; });
+  }
+  function playFile(t, vol) {
+    if (!t.data) return Promise.resolve(); stopTone();
+    return new Promise((res) => { try { const a = new Audio(t.data); a.volume = Math.max(0, Math.min(1, vol)); let n = clampN(t.repeat, 1, 5, 1); a.onended = () => { if (--n > 0) { a.currentTime = 0; a.play().catch(() => res()); } else res(); }; a.onerror = () => res(); toneNow = () => { a.pause(); res(); }; a.play().catch(() => res()); setTimeout(res, 30000); } catch (e) { res(); } });
+  }
+  function playToneObj(t, vol) { const v = Math.max(0, Math.min(1, vol * clampN(t.vol, 0, 1, 1))); return (t.style === 'file' ? playFile(t, v) : playSeq(toneSeq(t), t.wave, v)).then(() => new Promise((r) => setTimeout(r, clampN(t.gap, 0, 5, .4) * 1000))); }
+  function callKind(r) {
+    const s = [r.category, r.type, (r.ntypes || [])[0]].filter(Boolean).join(' ');
+    if (/\bems\b|medical|^\s*\d{1,2}[A-EO]\d|sick|fall|breath|cardiac|arrest|chest|lift|overdose|seizure|diabet|unconscious|stroke|bleed|lacerat|injur|mvc|crash/i.test(s)) return 'med';
+    if (/fire|smoke|alarm|brush|burn|structure|vehicle fire|odor|gas/i.test(s)) return 'fire';
+    return '';
+  }
+  // which tone to play for a call: Medical / Fire choice if set, else the main one
+  const toneFor = (o, r) => { const k = r ? callKind(r) : ''; return (k === 'med' && o.kindMed) || (k === 'fire' && o.kindFire) || o.kind; };
+  async function syncTones() {
+    const L = tonesGet(); let f = null;
+    if (cfg.tonesId) { try { f = await (await gd(`${API}/files/${cfg.tonesId}?fields=id,modifiedTime,trashed`)).json(); if (f.trashed) { f = null; cfg.tonesId = ''; } } catch (e) { if (e.code === 404) { cfg.tonesId = ''; f = null; } else throw e; } }
+    if (!f) { f = (await find(`name='station93-tones.json' and '${cfg.syncId}' in parents`))[0] || null; if (f) cfg.tonesId = f.id; }
+    if (f && f.modifiedTime !== cfg.tones_mod) { const remote = await getJSON(f.id); cfg.tones_mod = f.modifiedTime; cfg.tones_remote_at = remote.at || '';
+      if (remote.at && newer(remote.at, L.at || '')) { store.set('tones', {list: Array.isArray(remote.list) ? remote.list.slice(0, TONE_MAX) : [], at: remote.at}); if (view === 'settings') renderSettings(); toast('Alert tones updated from your other device'); } }
+    const now = tonesGet();
+    if (now.at && newer(now.at, cfg.tones_remote_at || '')) {
+      const body = JSON.stringify({v: 1, note: 'Station 93 alert tones shared by your devices', list: now.list, at: now.at, updated_by: cfg.device_name || DEV});
+      if (cfg.tonesId) { const r = await (await gd(`${UP}/files/${cfg.tonesId}?uploadType=media&fields=id,modifiedTime`, {method: 'PATCH', headers: {'Content-Type': 'application/json'}, body})).json(); cfg.tones_mod = r.modifiedTime; }
+      else { cfg.tonesId = await createFile({name: 'station93-tones.json', mimeType: 'application/json', parents: [cfg.syncId]}, body); cfg.tones_mod = (await (await gd(`${API}/files/${cfg.tonesId}?fields=modifiedTime`)).json()).modifiedTime; }
+      cfg.tones_remote_at = now.at;
+    }
+    saveCfg();
+  }
+  function toneOptions(sel, withSame) {
+    const mine = tonesGet().list;
+    return [withSame ? el('option', {value: '', text: 'Same as new-call tone', selected: !sel}) : null]
+      .concat(Object.entries(TONES).map(([v, t]) => el('option', {value: v, text: t, selected: sel === v})))
+      .concat(mine.length ? [el('optgroup', {label: 'My tones'}, mine.map((t) => el('option', {value: 'u:' + t.id, text: t.name, selected: sel === 'u:' + t.id})))] : []).filter(Boolean);
+  }
+  function toneEditor(orig) {
+    const t = JSON.parse(JSON.stringify(orig || newTone())); let pt = null;
+    const preview = () => { clearTimeout(pt); pt = setTimeout(() => { audio(); playToneObj(t, aset().vol); }, 350); };
+    const num = (get, set, attrs) => { const i = el('input', Object.assign({type: 'number', inputmode: 'decimal', value: String(get()), style: 'width:110px'}, attrs)); i.addEventListener('change', () => { set(Number(i.value)); preview(); }); return i; };
+    const row = (label, ...kids) => el('label', {class: 'row', style: 'gap:10px;align-items:center;flex-wrap:wrap'}, el('span', {style: 'min-width:130px', text: label}), ...kids);
+    const body = el('div', {style: 'display:flex;flex-direction:column;gap:10px'});
+    function draw() {
+      const name = el('input', {type: 'text', value: t.name, maxlength: '30', 'aria-label': 'Tone name', style: 'flex:1;min-width:180px'}); name.addEventListener('input', () => { t.name = name.value; });
+      const style = el('select', {'aria-label': 'Tone style'}, Object.entries(STYLES).map(([v, x]) => el('option', {value: v, text: x, selected: t.style === v}))); style.addEventListener('change', () => { t.style = style.value; draw(); if (t.style !== 'file') preview(); });
+      const wave = el('select', {'aria-label': 'Sound'}, Object.entries(WAVES).map(([v, x]) => el('option', {value: v, text: x, selected: t.wave === v}))); wave.addEventListener('change', () => { t.wave = wave.value; preview(); });
+      const vol = el('input', {type: 'range', min: '0.1', max: '1', step: '0.05', value: String(t.vol), 'aria-label': 'Tone volume'}); vol.addEventListener('change', () => { t.vol = Number(vol.value); preview(); });
+      const parts = [row('Name', name), row('Style', style)];
+      if (t.style === 'two') parts.push(row('A tone', num(() => t.a.f, (v) => { t.a.f = v; }, {min: '100', max: '4000', step: '0.1', 'aria-label': 'A tone Hz'}), 'Hz for', num(() => t.a.d, (v) => { t.a.d = v; }, {min: '0.1', max: '5', step: '0.1', 'aria-label': 'A tone seconds'}), 's'),
+        row('B tone', num(() => t.b.f, (v) => { t.b.f = v; }, {min: '100', max: '4000', step: '0.1', 'aria-label': 'B tone Hz'}), 'Hz for', num(() => t.b.d, (v) => { t.b.d = v; }, {min: '0.1', max: '8', step: '0.1', 'aria-label': 'B tone seconds'}), 's'),
+        el('p', {class: 'note', text: 'Pager-style page: A tone, a very short break, then the B tone. Enter your department\'s A/B frequencies to match your pager.'}));
+      if (t.style === 'hilo') parts.push(row('High / low', num(() => t.hi, (v) => { t.hi = v; }, {min: '100', max: '4000', 'aria-label': 'High pitch Hz'}), 'Hz /', num(() => t.lo, (v) => { t.lo = v; }, {min: '100', max: '4000', 'aria-label': 'Low pitch Hz'}), 'Hz'),
+        row('Each pitch', num(() => t.hd, (v) => { t.hd = v; }, {min: '0.05', max: '3', step: '0.05', 'aria-label': 'Seconds per pitch'}), 's, cycles', num(() => t.n, (v) => { t.n = v; }, {min: '1', max: '20', 'aria-label': 'Cycles'})));
+      if (t.style === 'beep') parts.push(row('Beep', num(() => t.bf, (v) => { t.bf = v; }, {min: '100', max: '4000', 'aria-label': 'Beep Hz'}), 'Hz for', num(() => t.bd, (v) => { t.bd = v; }, {min: '0.03', max: '3', step: '0.05', 'aria-label': 'Beep seconds'}), 's'),
+        row('Gap / count', num(() => t.bg, (v) => { t.bg = v; }, {min: '0', max: '3', step: '0.05', 'aria-label': 'Gap seconds'}), 's gap,', num(() => t.bn, (v) => { t.bn = v; }, {min: '1', max: '20', 'aria-label': 'Number of beeps'}), 'beeps'));
+      if (t.style === 'seq') {
+        parts.push(el('p', {class: 'note', text: 'Each step is a pitch (Hz) and how long it lasts. Pitch 0 = a pause.'}));
+        (t.steps || []).forEach((st, i) => parts.push(el('div', {class: 'row', style: 'gap:6px;flex-wrap:wrap;align-items:center'}, el('b', {text: `${i + 1}.`, style: 'min-width:24px'}),
+          num(() => st.f, (v) => { st.f = v; }, {min: '0', max: '4000', 'aria-label': `Step ${i + 1} Hz`}), 'Hz', num(() => st.d, (v) => { st.d = v; }, {min: '0.03', max: '5', step: '0.05', 'aria-label': `Step ${i + 1} seconds`}), 's',
+          el('button', {type: 'button', class: 'btn ghost', text: '↑', 'aria-label': `Move step ${i + 1} up`, disabled: i === 0, onclick: () => { [t.steps[i - 1], t.steps[i]] = [t.steps[i], t.steps[i - 1]]; draw(); preview(); }}),
+          el('button', {type: 'button', class: 'btn ghost', text: '↓', 'aria-label': `Move step ${i + 1} down`, disabled: i === t.steps.length - 1, onclick: () => { [t.steps[i + 1], t.steps[i]] = [t.steps[i], t.steps[i + 1]]; draw(); preview(); }}),
+          el('button', {type: 'button', class: 'btn ghost', text: '✕', 'aria-label': `Delete step ${i + 1}`, onclick: () => { t.steps.splice(i, 1); draw(); preview(); }}))));
+        parts.push(el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn', text: '+ Tone step', disabled: (t.steps || []).length >= 40, onclick: () => { t.steps.push({f: 1000, d: 0.3}); draw(); preview(); }}),
+          el('button', {type: 'button', class: 'btn ghost', text: '+ Pause', disabled: (t.steps || []).length >= 40, onclick: () => { t.steps.push({f: 0, d: 0.2}); draw(); }})));
+      }
+      if (t.style === 'file') {
+        const fi = el('input', {type: 'file', accept: 'audio/*', 'aria-label': 'Choose a recording'});
+        fi.addEventListener('change', () => { const file = fi.files && fi.files[0]; if (!file) return; if (file.size > REC_MAX) { toast(`That file is ${Math.round(file.size / 1024)} KB - keep recordings under ${Math.round(REC_MAX / 1024)} KB (a few seconds)`); fi.value = ''; return; }
+          const rd = new FileReader(); rd.onload = () => { t.data = String(rd.result); t.file = file.name; if (t.name === 'My tone') t.name = file.name.replace(/\.[^.]+$/, '').slice(0, 30); draw(); preview(); }; rd.readAsDataURL(file); });
+        parts.push(row('Recording', fi), el('p', {class: 'note', text: t.data ? `Using ${t.file || 'a recording'} (${Math.round(t.data.length * 0.75 / 1024)} KB).` : `Pick a short audio file (mp3, m4a, wav) under ${Math.round(REC_MAX / 1024)} KB - for example a pager tone you recorded.`}));
+      } else parts.push(row('Sound', wave));
+      parts.push(row('Volume', vol), row('Play it', num(() => t.repeat, (v) => { t.repeat = v; }, {min: '1', max: '5', 'aria-label': 'Times to play'}), 'time(s), then wait', num(() => t.gap, (v) => { t.gap = v; }, {min: '0', max: '5', step: '0.1', 'aria-label': 'Pause before voice'}), 's before the read-out'));
+      body.replaceChildren(...parts);
+    }
+    draw();
+    const save = () => { const L = tonesGet().list.slice(); t.name = (t.name || 'My tone').trim().slice(0, 30) || 'My tone'; if (t.style === 'file' && !t.data) { toast('Pick a recording first'); return; }
+      const i = L.findIndex((x) => x.id === t.id); if (i >= 0) L[i] = t; else { if (L.length >= TONE_MAX) { toast(`You can keep up to ${TONE_MAX} tones - delete one first`); return; } L.push(t); }
+      tonesSet(L); stopTone(); closeModal(); toast(`Saved "${t.name}" - it syncs to your other devices`); renderSettings(); };
+    modal(el('div', {class: 'box', role: 'dialog', 'aria-label': orig ? 'Edit tone' : 'New tone'}, el('h2', {text: orig ? 'Edit tone' : 'New tone'}), el('p', {class: 'note', text: 'Changes play as you make them.'}), body,
+      el('div', {class: 'row', style: 'justify-content:flex-end;flex-wrap:wrap'}, el('button', {type: 'button', class: 'btn ghost', text: 'Stop', onclick: stopTone}), el('button', {type: 'button', class: 'btn', text: '▶ Play', onclick: () => { audio(); playToneObj(t, aset().vol); }}),
+        el('button', {type: 'button', class: 'btn ghost', text: 'Cancel', onclick: () => { stopTone(); closeModal(); }}), el('button', {type: 'button', class: 'btn primary', text: 'Save tone', onclick: save}))));
+  }
+  function toneBuilderBlock() {
+    const L = tonesGet().list; const o = aset();
+    const sel = (k, label, same) => { const s = el('select', {'aria-label': label}, toneOptions(o[k] || '', same)); s.addEventListener('change', () => { const x = aset(); x[k] = s.value; store.set('alerts', x); if (s.value) { audio(); playKind(s.value, x.vol); } }); return el('label', {}, label, s); };
+    return el('div', {style: 'display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:10px'},
+      el('h3', {text: 'Tone builder'}),
+      sel('kindMed', 'Medical calls', true), sel('kindFire', 'Fire calls', true),
+      el('p', {class: 'note', text: L.length ? 'Your tones (shared with your other devices):' : 'Make your own alert tones - pager-style two-tone, hi-lo, beeps, a free sequence, or a recording. They show up in the tone lists above and sync to your other devices.'}),
+      L.length ? el('ul', {class: 'list', style: 'display:flex;flex-direction:column;gap:6px;padding:0;margin:0;list-style:none'}, L.map((t) => el('li', {class: 'row', style: 'gap:8px;flex-wrap:wrap;align-items:center'},
+        el('b', {style: 'flex:1;min-width:140px', text: t.name}), el('span', {class: 'note', text: STYLES[t.style] || ''}),
+        el('button', {type: 'button', class: 'btn ghost', text: '▶', 'aria-label': `Play ${t.name}`, onclick: () => { audio(); playToneObj(t, aset().vol); }}),
+        el('button', {type: 'button', class: 'btn ghost', text: 'Edit', 'aria-label': `Edit ${t.name}`, onclick: () => toneEditor(t)}),
+        el('button', {type: 'button', class: 'btn ghost', text: 'Delete', 'aria-label': `Delete ${t.name}`, onclick: () => confirmBox(`Delete "${t.name}"?`, 'It is removed on all your devices at their next sync. Anything using it goes back to the two-tone page.', 'Delete', () => { tonesSet(tonesGet().list.filter((x) => x.id !== t.id)); const x = aset(); ['kind', 'kindMed', 'kindFire'].forEach((k) => { if (x[k] === 'u:' + t.id) x[k] = k === 'kind' ? 'two' : ''; }); store.set('alerts', x); renderSettings(); })})))) : null,
+      el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn primary', text: '+ New tone', disabled: L.length >= TONE_MAX, onclick: () => toneEditor(null)})));
+  }
   function alertSection() {
     const o = aset(); const save = (k, v) => { const x = aset(); x[k] = v; store.set('alerts', x); };
     const box = (k, label) => { const c = el('input', {type: 'checkbox', checked: !!o[k], style: 'width:22px;height:22px'}); c.addEventListener('change', () => save(k, c.checked)); return el('label', {class: 'row', style: 'gap:10px;min-height:44px'}, c, label); };
-    const kind = el('select', {'aria-label': 'Alert tone'}, Object.entries(TONES).map(([v, t]) => el('option', {value: v, text: t, selected: o.kind === v}))); kind.addEventListener('change', () => { save('kind', kind.value); playTone(kind.value, aset().vol); });
+    const kind = el('select', {'aria-label': 'Alert tone'}, toneOptions(o.kind, false)); kind.addEventListener('change', () => { save('kind', kind.value); playKind(kind.value, aset().vol); });
     const vol = el('input', {type: 'range', min: '0.1', max: '1', step: '0.1', value: String(o.vol), 'aria-label': 'Alert volume'}); vol.addEventListener('change', () => save('vol', Number(vol.value)));
     const rate = el('select', {'aria-label': 'Speaking speed'}, [['0.85', 'Slower'], ['1', 'Normal'], ['1.15', 'Faster']].map(([v, t]) => el('option', {value: v, text: t, selected: String(o.rate) === v}))); rate.addEventListener('change', () => save('rate', Number(rate.value)));
     const voice = el('select', {'aria-label': 'Voice'}, el('option', {value: '', text: 'Default voice'}));
@@ -580,12 +700,13 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     const sample = {type: 'Lift assist', address: '100 Main St', zone: 'NORTH', units: 'EG906,MD4,AVFD', num: 100};
     return el('div', {class: 'sec'}, el('h3', {text: 'Alert tone & read-out'}),
       el('p', {class: 'note', text: 'When a new call comes in (from Bryx or a sync) the app sounds a tone and reads the call out twice. Response steps (En route, On scene, Patient contact, Clear) are read back when you tap them. Works while the app is open or recently used - turn the volume up and keep the screen on during a shift.'}),
-      box('tone', 'Play an alert tone for new calls'), el('label', {}, 'Tone', kind), el('label', {}, 'Volume', vol),
+      box('tone', 'Play an alert tone for new calls'), el('label', {}, 'Tone for new calls', kind), el('label', {}, 'Volume', vol),
       box('readCall', 'Read the call out loud (type, address, zone, units, run #)'), box('readResp', 'Read my response steps out loud'),
       el('label', {}, 'Voice', voice), el('label', {}, 'Speed', rate),
-      el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn', text: 'Test call alert', onclick: async () => { const x = aset(); audio(); if (x.tone) await playTone(x.kind, x.vol); await speak(callWords(Object.assign({}, sample, {test: true})), x); }}),
+      el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn', text: 'Test call alert', onclick: async () => { const x = aset(); audio(); if (x.tone) await playKind(toneFor(x, sample), x.vol); await speak(callWords(Object.assign({}, sample, {test: true})), x); }}),
         el('button', {type: 'button', class: 'btn ghost', text: 'Test response read-out', onclick: () => { audio(); speak(`${sayUnit('A903')}, en route, ${pad2(new Date().getHours())} ${pad2(new Date().getMinutes())}.`); }}),
-        el('button', {type: 'button', class: 'btn ghost', text: 'Stop', onclick: () => { try { speechSynthesis.cancel(); } catch (e) { /* none */ } }})));
+        el('button', {type: 'button', class: 'btn ghost', text: 'Stop', onclick: () => { stopTone(); try { speechSynthesis.cancel(); } catch (e) { /* none */ } }})),
+      toneBuilderBlock());
   }
   function notifySection() {
     const ns = nset(); const can = 'Notification' in window; const perm = can ? Notification.permission : 'unsupported';
@@ -755,7 +876,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
       const rs = (await find(`'${cfg.fromId}' in parents and name contains 'from-claude-'`, 'name desc')).slice(0, 5).reverse();
       for (const f of rs) { if (cfg.claude_seen && f.name <= cfg.claude_seen) continue; let j = {}; try { j = await getJSON(f.id); got += applyClaude(j); } catch (e) { if (e.code === 'auth') throw e; console.error('Skipped reply', f.name, e); addNotices([`Skipped a reply from Claude that could not be read (${f.name})`]); } cfg.claude_seen = f.name; cfg.claude_at = j.generated_at || f.modifiedTime; }
       if (manual) cfg.sync_requested_at = nowISO();
-      retention(); got += await syncShared(); try { await syncSettings(); } catch (e) { /* settings file is optional */ } calSync(false);
+      retention(); got += await syncShared(); try { await syncSettings(); } catch (e) { /* settings file is optional */ } try { await syncTones(); } catch (e) { /* tones file is optional */ } calSync(false);
       S.ready = true; persist(); refreshMe(); await flushPops(); offerRespond(); if (!cfg.notify_armed) { cfg.notify_armed = true; saveCfg(); }
       cfg.last_sync = nowISO(); cfg.last_err = ''; saveCfg(); setNet(outbox.length ? 'ok' : 'ok');
       if (manual) toast(got ? `Synced - ${got} update${got > 1 ? 's' : ''} received` : 'Synced - nothing new');

@@ -1,7 +1,7 @@
 // Keeps the app itself on the tablet so it opens with no signal. Your data is not stored here.
 // A new version installs in the background and waits; the app's Settings shows a green
 // "Install update" button and only switches over after you confirm.
-const V = 'st93-2.8.0';
+const V = 'st93-2.9.0';
 const SHELL = ['./', './index.html', './config.js', './geo.js', './zones.js', './ntypes.js', './arcade93.js', './ta905-front.png', './ta905-side.png', './eg906-front.png', './eg906-side.png', './manifest.webmanifest', './icon-192.png', './icon-512.png', './notify-192.png', './badge-96.png', './splash.jpg'];
 self.addEventListener('install', (e) => {
   // cache: 'reload' skips the browser's HTTP cache so the new version really gets the new files
