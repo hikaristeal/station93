@@ -255,6 +255,30 @@ body.bd-night .app{filter:brightness(.88)}
 .tv .sec{background:none;border:0;padding:0;color:inherit}.tv .sec h3{color:#9aa49d}.tv .ring span,.tv .ring small,.tv .note{color:#cfd6d1}.tv .ring .rbg{stroke:#2b322e}.tv .tvexit{position:fixed;right:1.5vw;bottom:1.5vh;opacity:.45;background:#1b201d;color:#eef2ef;border-color:#2b322e}.tv .tvexit:hover,.tv .tvexit:focus{opacity:1}
 @media (max-width:900px){.tv .tvgrid{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.tlrun{animation:none;stroke-dashoffset:0}.tldot{animation:none;opacity:1}.ring .rfg{transition:none}body.bd-call .top{animation:none;box-shadow:inset 0 -6px 0 var(--accent)}.tv .tvcall{animation:none}}
+/* Command tab: chain of command of AI agents */
+.tabbtn{position:relative}
+.cmdcount{position:absolute;top:6px;right:10px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--bad);color:#fff;font:700 12px/20px var(--body);text-align:center}
+.cmdgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.chain{display:flex;flex-direction:column;align-items:center}
+.chainrow{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;width:100%}
+.chainrow.divs{border-top:2px solid var(--line);padding-top:12px}
+.chainline{width:2px;height:16px;background:var(--line)}
+.ag{background:var(--sunk);border:1px solid var(--line);border-left:5px solid var(--blue);border-radius:var(--r);padding:10px 12px;min-width:140px;flex:1 1 140px;max-width:220px;text-align:left}
+.ag.you{border-left-color:var(--accent);max-width:300px}.ag-duty{border-left-color:#7a4fb3;max-width:300px}.ag-qa{border-left-color:var(--bad)}.ag-logistics{border-left-color:var(--warn)}.ag-engineer{border-left-color:var(--gray)}
+.agrank{font:600 11px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.agname{font:700 17px/1.2 var(--display);display:flex;align-items:center;gap:6px}
+.agdot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}.agdot.working{background:var(--blue)}.agdot.waiting{background:var(--warn)}.agdot.command{background:var(--accent)}
+.sig{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:8px}
+.sigdetail{white-space:pre-wrap;background:var(--sunk);border-radius:8px;padding:10px;margin:0;font-size:13px;max-height:240px;overflow:auto}
+.sec.hot{border-color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad)}
+.task{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:inset 5px 0 0 var(--bar,var(--line));text-align:left;width:100%;min-height:var(--tap)}
+.task .meta{color:var(--muted);font-size:13px}
+.task.b-needs{--bar:var(--warn)}.task.b-draft,.task.b-c9{--bar:var(--blue)}.task.b-ready{--bar:var(--ok)}.task.b-blocked{--bar:var(--bad)}.task.b-done{--bar:var(--gray)}
+.tdetail{border:1px solid var(--line);border-top:0;border-radius:0 0 var(--r) var(--r);margin-top:-10px;padding:12px 14px;background:var(--panel);display:flex;flex-direction:column;gap:8px}
+.pcl{margin:0;padding-left:18px;font-size:13px}.pcl .bad{color:var(--bad)}.pcl .warn{color:var(--warn)}
+.agtable{width:100%;border-collapse:collapse;font-size:13px}.agtable td,.agtable th{text-align:left;padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+@media (max-width:900px){.cmdgrid{grid-template-columns:1fr}}
+@media (max-width:640px){.rail{gap:0}.rail .tabbtn{flex:1 1 0;min-width:0;padding:0 1px;font-size:9.5px;letter-spacing:0;gap:3px;overflow:hidden}.rail .tabbtn svg{width:22px;height:22px}.rail button.badge{flex:0 0 40px;width:40px;margin:0 2px 0 0;padding:10px 0;font-size:11px;align-self:center}.cmdcount{top:2px;right:2px}}
 @media (max-width:820px){
   .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -361,6 +385,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
   <nav class="rail" aria-label="Sections">
     <button class="badge" id="avfdBtn" type="button" aria-label="Open the AVFD dashboard" title="AVFD dashboard">AVFD</button>
     <button class="tabbtn on" data-view="calls" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Calls</button>
+    <button class="tabbtn" data-view="command" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2.5" width="6" height="5" rx="1"/><rect x="2.5" y="16.5" width="6" height="5" rx="1"/><rect x="9" y="16.5" width="6" height="5" rx="1"/><rect x="15.5" y="16.5" width="6" height="5" rx="1"/><path d="M12 7.5v9M5.5 16.5V12h13v4.5"/></svg>Command<span class="cmdcount" id="cmdCount" hidden></span></button>
     <button class="tabbtn" data-view="mileage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4M12 5V3"/></svg>Mileage</button>
     <button class="tabbtn" data-view="crew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14.8c1.8.8 3 2.6 3.5 5.2"/></svg>Crew</button>
     <button class="tabbtn" data-view="map" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>Map</button>
@@ -378,6 +403,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
       <button class="svc lockb" id="lockBtn" type="button" title="Lock the app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>Lock</button>
     </header>
     <section class="view" id="v-calls"></section>
+    <section class="view" id="v-command" hidden></section>
     <section class="view" id="v-mileage" hidden></section>
     <section class="view" id="v-crew" hidden></section>
     <section class="view" id="v-map" hidden></section>
@@ -398,7 +424,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
 <script>
 (function () {
   'use strict';
-  const APPV = '2.9.2';
+  const APPV = '2.10.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -422,14 +448,14 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
   function refreshMe() { const m = meRec(); if (m) { ME = m.name; store.set('me', ME); $('#subT').textContent = `Argyle Fire · ${m.name}${m.number ? ' #' + m.number : ''}`; } }
 
   // ---------- state: kept on this tablet, synced through Google Drive ----------
-  const S = {reports: {}, crew: {}, apparatus: {}, mileage: {}, mileage_archive: {}, requests: {}, servicelog: {}, checks: {}, devices: {}, deleted: {}, ready: false};
+  const S = {reports: {}, crew: {}, apparatus: {}, mileage: {}, mileage_archive: {}, requests: {}, servicelog: {}, checks: {}, devices: {}, deleted: {}, tasks: {}, agent_status: {}, ready: false};
   let DEK = null, vaultReady = false, vault = {notes: {}, sheets: {}, addr: {}};
   const hasVault = () => { try { return !!localStorage.getItem('st93t.secret'); } catch (e) { return false; } };
   let net = 'wait', view = 'calls';
   (function loadLocal() { const d = store.get('data', null); if (d) { Object.assign(S, d); S.ready = true; } })();
   // notes and narratives are kept encrypted on the device (#49); the plain data file never holds them once a user has signed in
   const persist = () => {
-    const base = {crew: S.crew, apparatus: S.apparatus, mileage: S.mileage, mileage_archive: S.mileage_archive, requests: S.requests, servicelog: S.servicelog, checks: S.checks, devices: S.devices, deleted: S.deleted};
+    const base = {crew: S.crew, apparatus: S.apparatus, mileage: S.mileage, mileage_archive: S.mileage_archive, requests: S.requests, servicelog: S.servicelog, checks: S.checks, devices: S.devices, deleted: S.deleted, tasks: S.tasks, agent_status: S.agent_status};
     const strip = () => { const rs = {}, notes = {}; for (const [id, r] of Object.entries(S.reports)) { if (r.notes || r.narrative) { notes[id] = {n: r.notes || '', x: r.narrative || ''}; const c = Object.assign({}, r); delete c.notes; delete c.narrative; rs[id] = c; } else rs[id] = r; } return {rs, notes}; };
     if (vaultReady && DEK) { const x = strip(); vault.notes = x.notes; store.set('data', Object.assign({reports: x.rs}, base)); saveVault(); }
     else if (hasVault()) store.set('data', Object.assign({reports: strip().rs}, base));
@@ -754,6 +780,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     for (const inc of arr(snap.reports)) { const id = String(inc.id); const cur = S.reports[id]; if (!cur || newer(inc._mod, cur._mod) || (!inc._mod && !cur._mod && !pend.has(id) && JSON.stringify(inc) !== JSON.stringify(cur))) { if (!cur) pop('call', `New call ${inc.num || id}`, [inc.type, inc.area].filter(Boolean).join(' · '), id); else if (inc.stage && inc.stage !== cur.stage) pop(inc.stage === 'Ready to Complete' ? 'approval' : 'other', `${inc.num || id}: ${inc.stage}`, inc.needs || '', id); S.reports[id] = Object.assign({}, inc, {id}); n++; } }
     for (const k of ['crew', 'apparatus']) for (const inc0 of arr(snap[k])) { const id = String(inc0.id); const cur = S[k][id]; const inc = keepAssign(cur, inc0); if (!cur || !newer(cur.status_at, inc.status_at) && JSON.stringify(inc) !== JSON.stringify(cur)) { popStatus(k, cur, inc); S[k][id] = Object.assign({}, inc, {id}); n++; } }
     for (const inc of arr(snap.mileage)) { const v = inc.vehicle || inc.id; const cur = S.mileage[v]; if (!cur || inc.page > cur.page || (inc.page === cur.page && (inc.rows || []).length > (cur.rows || []).length)) { S.mileage[v] = Object.assign({}, inc, {vehicle: v}); n++; } }
+    for (const inc of arr(snap.tasks)) { if (!inc || !inc.id) continue; const id = String(inc.id); if (takeIn('tasks', S.tasks[id], inc)) { S.tasks[id] = JSON.parse(JSON.stringify(inc)); n++; } }   // orders given on the PC app
     purgeDeleted(); return n;
   }
   function addNotices(list) { if (!list.length) return; list.forEach((t) => bellAdd('claude', t, '', '')); const all = store.get('notices', []).concat(list.map((t) => ({at: nowISO(), text: t}))).slice(-30); store.set('notices', all); }
@@ -779,6 +806,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     for (const m of j.mileage || []) { const cur = S.mileage[m.vehicle]; if (!cur || m.page > cur.page || (m.page === cur.page && (m.rows || []).length >= (cur.rows || []).length)) { if (cur && (m.rows || []).length > (cur.rows || []).length) pop('other', `${m.vehicle} mileage`, `Row ${m.rows.length} added`, ''); if (cur && (m.rows || []).length > (cur.rows || []).length) notes.push(`${m.vehicle} mileage: row ${m.rows.length} added`); S.mileage[m.vehicle] = Object.assign(cur || {}, m); n++; } }
     for (const x of j.notices || []) if (x && x.text) { notes.push(String(x.text)); if (!/nothing new/i.test(x.text)) pop('other', 'Station 93', String(x.text), ''); }
     for (const dn of j.requests_done || []) if (dn.id && S.requests[dn.id]) Object.assign(S.requests[dn.id], {status: dn.status || 'done', done_at: dn.at, note: dn.note || S.requests[dn.id].note, updated_at: g || nowISO()});
+    if (j.tasks || j.agents) { const t = applyTasks(j); n += t.n; notes.push(...t.notes); }   // Command tab: agent tasks + roster status
     if (j.applied_through_tablet) { outbox = outbox.filter((c) => newer(c.at, j.applied_through_tablet)); store.set('outbox', outbox); }
     purgeDeleted(); addNotices(notes); return n;
   }
@@ -786,11 +814,11 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
   // ----- ONE shared data file on Drive (sync/station93-data.json): every device (tablet, phone, PC) merges it itself -----
   // Newest record wins (reports by _mod; crew/apparatus by status/assignment time; mileage by page then rows);
   // exact ties are broken the same way on every device so they always agree. Claude only reads it and answers with replies.
-  const SHARED = 'station93-data.json', COLLS = ['reports', 'crew', 'apparatus', 'mileage', 'mileage_archive', 'requests', 'servicelog', 'checks', 'devices', 'deleted'];
+  const SHARED = 'station93-data.json', COLLS = ['reports', 'crew', 'apparatus', 'mileage', 'mileage_archive', 'requests', 'servicelog', 'checks', 'devices', 'deleted', 'tasks', 'agent_status'];
   const DEV = (() => { let d = store.get('device', ''); if (!d) { d = 'd' + Math.random().toString(36).slice(2, 10); store.set('device', d); } return d; })();
   const stable = (v) => JSON.stringify(v, (k, x) => x && typeof x === 'object' && !Array.isArray(x) ? Object.keys(x).sort().reduce((o, kk) => { o[kk] = x[kk]; return o; }, {}) : x);
   const maxs = (...a) => a.filter(Boolean).sort().pop() || '';
-  const recKey = (c, r) => c === 'reports' ? (r._mod || '') : c === 'crew' || c === 'apparatus' ? maxs(r.status_at, r.assigned_at, r._mod) : c === 'requests' ? maxs(r.updated_at, r.done_at, r.at) : (r._mod || r.at || '');
+  const recKey = (c, r) => c === 'reports' ? (r._mod || '') : c === 'crew' || c === 'apparatus' ? maxs(r.status_at, r.assigned_at, r._mod) : c === 'requests' ? maxs(r.updated_at, r.done_at, r.at) : c === 'tasks' ? maxs(r._mod, r.updated_at, r.at) : (r._mod || r.at || '');
   function takeIn(c, cur, inc) {
     if (!cur) return true;
     if (c === 'mileage') { const pi = Number(inc.page) || 0, pc = Number(cur.page) || 0, ri = (inc.rows || []).length, rc = (cur.rows || []).length; if (pi !== pc) return pi > pc; if (ri !== rc) return ri > rc; }
@@ -1390,9 +1418,187 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
       el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn primary', text: 'Open Station TV mode', onclick: openTV}), el('span', {class: 'note', text: 'Full-screen board for the station TV: units, open reports, progress and weather. Esc or Exit to leave. Tip: open the app with ?tv=1 to start in TV mode.'})));
   }
 
+  // =====================================================================================================
+  // Command tab - AI agents that work for you through a chain of command.
+  // You > Duty Officer > Dispatch, Report Writer, QA / Safety, Logistics, App Engineer. The agents run in Claude
+  // (Neris plugin: skills/command + agents/). Orders and your decisions live in S.tasks, which rides in the shared
+  // Drive file like every other collection; Claude answers with tasks[] / agents[] in its from-claude replies.
+  // Nothing gated (email, FireWorks Complete, app changes) happens without your approval here AND your word in a chat.
+  // Tasks never hold patient details or narratives.
+  // =====================================================================================================
+  const AGENTS = [
+    {id: 'duty', name: 'Duty Officer', rank: 'Operations', to: 'you', role: 'Takes your orders, assigns them down the chain, checks every result against the standing rules, and brings you one approval list.', may: 'Assign and send back tasks', gate: 'You approve anything that leaves the department'},
+    {id: 'dispatch', name: 'Dispatch', rank: 'Division', to: 'duty', role: 'Bryx call into a new call record: CAD # check, zone lookup, default crew, prefilled assessment sheet.', may: 'Draft call records', gate: 'Duty Officer checks; CAD # stays provisional until you confirm'},
+    {id: 'writer', name: 'Report Writer', rank: 'Division', to: 'duty', role: 'Writes the narrative from your notes in your wording, [?] for any missing fact, and prepares the report email draft.', may: 'Drafts only', gate: 'QA, then you'},
+    {id: 'qa', name: 'QA / Safety', rank: 'Division', to: 'duty', role: 'Checks work before it moves up: missing fields, CAD vs FireWorks, OIC rules, typos, and no patient names, ages or vitals.', may: 'Pass, or return work', gate: 'No other agent can overrule a QA hold'},
+    {id: 'logistics', name: 'Logistics', rank: 'Division', to: 'duty', role: 'Mileage readings and pages, in / out of service, backups, shift and morning briefings.', may: 'Update logs', gate: 'Reading typos go to you before they are used'},
+    {id: 'engineer', name: 'App Engineer', rank: 'Division', to: 'duty', role: 'Proposes fixes and improvements to Station 93, the tablet app, templates and the Neris skills.', may: 'Proposals only', gate: 'You approve every change'},
+  ];
+  const AG = Object.fromEntries(AGENTS.map((a) => [a.id, a]));
+  const TST = {queued: 'Waiting for Claude', assigned: 'Assigned', working: 'Working', qa: 'In QA', awaiting_you: 'Awaiting your signature', approved: 'Approved - finish in a chat', returned: 'Sent back', done: 'Done', rejected: 'Rejected', cancelled: 'Cancelled', blocked: 'Blocked'};
+  const TCL = {queued: 'needs', assigned: 'draft', working: 'draft', qa: 'c9', awaiting_you: 'blocked', approved: 'ready', returned: 'needs', done: 'done', rejected: 'done', cancelled: 'done', blocked: 'blocked'};
+  const TCLOSED = ['done', 'rejected', 'cancelled'];
+  const GATES = {send_email: 'Send report email', complete_fireworks: 'Complete in FireWorks', code_change: 'Change the app', record_change: 'Change a record', other: 'Decision'};
+  const QUICK = [
+    {label: 'Draft narrative', agent: 'writer', order: 'Draft the narrative from my notes', needsCall: true},
+    {label: 'QA this call', agent: 'qa', order: 'QA check this call before it goes up', needsCall: true},
+    {label: 'QA all open', agent: 'qa', order: 'QA check every open report and list what each one still needs'},
+    {label: 'Check approvals', agent: 'duty', order: 'Check 913 / C9 approvals and tell me what is ready to Complete'},
+    {label: 'Mileage check', agent: 'logistics', order: 'Check both mileage logs for gaps and typos'},
+    {label: 'Shift briefing', agent: 'logistics', order: 'Give me a shift briefing: open calls, approvals, units in and out of service'},
+    {label: 'Improve the app', agent: 'engineer', order: 'Look at how I use Station 93 and propose one improvement'},
+  ];
+  const myName = () => ME || (me() || {}).username || 'Alex Bishop';
+  const taskList = () => Object.values(S.tasks || {});
+  const tWaiting = () => taskList().filter((t) => t.status === 'awaiting_you');
+  const callName = (id) => { const r = id && S.reports[id]; return r ? `${r.num || r.id}${r.type ? ' · ' + r.type : ''}` : ''; };
+  function cmdCount() { const b = $('#cmdCount'); if (!b) return; const w = tWaiting().length; b.textContent = w > 9 ? '9+' : String(w); b.hidden = !w; }
+  // QA's first look, on the tablet even offline
+  const PHI = [[/\b\d{1,3}\s?(?:yo|y\/o|y\.o\.|yr|yrs|year[- ]old|years old)\b/i, 'an age'], [/\b(?:bp|blood pressure)\s*[:=]?\s*\d{2,3}\s*\/\s*\d{2,3}/i, 'a blood pressure'], [/\b(?:hr|pulse|resp|rr|spo2|sp02|o2 sat|gcs|bgl|glucose|cbg)\s*[:=]?\s*\d{1,3}/i, 'a vital sign'], [/\b(?:[Mm]rs?|[Mm]s|[Mm]iss)\.?\s+[A-Z][a-z]+/, 'what looks like a name'], [/\b(?:dob|d\.o\.b\.|born)\b/i, 'a date of birth']];
+  function precheck(r, order) {
+    const out = [];
+    for (const [re, what] of PHI) if (re.test(order || '')) out.push({lvl: 'bad', text: `The order contains ${what} - leave patient details out of orders`});
+    if (!r) return out;
+    const text = `${r.notes || ''}\n${r.narrative || ''}`;
+    for (const [re, what] of PHI) if (re.test(text)) out.push({lvl: 'bad', text: `Notes or narrative contain ${what} - patient details go only in FireWorks or the assessment sheet`});
+    if (!/^2026-\d{8}$/.test(r.cad || '')) out.push({lvl: 'warn', text: 'CAD # is not in the 2026-00000NNN form'});
+    if (r.cad_provisional) out.push({lvl: 'warn', text: 'CAD # is still a guess - confirm it in Bryx'});
+    if (!r.type) out.push({lvl: 'warn', text: 'No dispatch call type'});
+    if (!r.zone || r.zone === '—') out.push({lvl: 'warn', text: 'No zone yet'});
+    if (!(r.unitcrew || []).some((u) => (u.members || []).length) && !r.crew) out.push({lvl: 'warn', text: 'No crew on the call'});
+    if (!String(r.notes || '').trim() && !String(r.narrative || '').trim()) out.push({lvl: 'warn', text: 'No notes or narrative - the Report Writer only writes from what you tell it'});
+    if (/\[\?\]/.test(r.narrative || '')) out.push({lvl: 'warn', text: 'Narrative still has [?] gaps to fill'});
+    if (r.assigned_to === 'Jonathan Day' && r.oic !== 'Day') out.push({lvl: 'warn', text: 'Assigned to J. Day but OIC is not Day'});
+    return out;
+  }
+  function saveTask(t, kind, fields) {
+    S.tasks[t.id] = t; outbox.push({at: nowISO(), kind, id: t.id, fields: fields || {}, from: 'tablet'}); if (outbox.length > 400) outbox = outbox.slice(-400);
+    store.set('outbox', outbox); persist(); markDirty(); setNet(net === 'bad' || net === 'tap' ? net : 'warn'); schedulePush();
+  }
+  function issueOrder(order, agent, reportId) {
+    order = String(order || '').trim(); if (!order) { toast('Type the order first'); return; }
+    const r = reportId ? S.reports[reportId] : null; const pc = precheck(r, order);
+    const go = () => {
+      const at = nowISO(); const a = AG[agent] ? agent : 'duty';
+      const t = {id: 'T' + Date.now().toString(36), at, _mod: at, by: myName(), device: cfg.device_name || DEV, order, agent: a, report_id: reportId || '', cad: r ? r.cad : '', status: 'queued', precheck: pc, chain: [{at, by: myName(), text: `Order to ${AG[a].name}: ${order}`}]};
+      saveTask(t, 'task.new', {order, agent: a, report_id: t.report_id, cad: t.cad, precheck: pc.map((x) => x.text)});
+      if (r) { r.history = (r.history || []).concat([{at, by: myName(), items: [`Order to ${AG[a].name}: ${order}`]}]).slice(-40); }
+      cmdDraft = ''; renderCommand(); toast(`Order logged for ${AG[a].name} - goes to Claude with the next sync`);
+    };
+    const bad = pc.filter((x) => x.lvl === 'bad');
+    if (bad.length) confirmBox('QA pre-check', bad.map((x) => x.text).join('\n') + '\n\nFix it first, or give the order anyway?', 'Give the order anyway', go); else go();
+  }
+  function decideTask(t, decision) {
+    const g = (t.approval && t.approval.action) || 'other';
+    const finish = (note) => {
+      const at = nowISO(); const n2 = String(note || '').trim();
+      const nt = Object.assign({}, t, {status: decision, _mod: at, decision: {decision, note: n2, at, by: myName()}, chain: (t.chain || []).concat([{at, by: myName(), text: decision === 'approved' ? 'Approved' : decision === 'returned' ? `Sent back: ${n2}` : `Rejected${n2 ? ': ' + n2 : ''}`}])});
+      saveTask(nt, 'task.decision', {decision, note: n2, action: g, cad: t.cad});
+      const r = t.report_id && S.reports[t.report_id]; if (r) r.history = (r.history || []).concat([{at, by: myName(), items: [`${GATES[g] || GATES.other}: ${decision}`]}]).slice(-40);
+      renderCommand(); toast(decision === 'approved' ? 'Approved - recorded for Claude' : decision === 'returned' ? 'Sent back down the chain' : 'Rejected');
+    };
+    if (decision === 'approved') {
+      const extra = g === 'complete_fireworks' ? ' Claude Completes it only once 913 or C9 has approved, in a chat with FireWorks signed in.' : g === 'send_email' ? ' Claude sends it the next time you say "send" in a chat. Scheduled runs never send.' : g === 'code_change' ? ' The change is made in a chat, and you can still check it first.' : '';
+      confirmBox('Approve?', `${(t.approval && t.approval.text) || t.order}.${extra}`, 'Approve', () => finish('')); return;
+    }
+    const ta = el('textarea', {rows: 3, placeholder: decision === 'returned' ? 'What should they fix?' : 'Why (optional)', 'aria-label': 'Note'});
+    modal(el('div', {class: 'box', role: 'dialog', 'aria-label': decision === 'returned' ? 'Send back' : 'Reject'}, el('h2', {text: decision === 'returned' ? 'Send back' : 'Reject'}), el('p', {class: 'note', text: (t.approval && t.approval.text) || t.order}), ta,
+      el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn ghost', text: 'Cancel', onclick: closeModal}),
+        el('button', {type: 'button', class: decision === 'returned' ? 'btn primary' : 'btn primary', text: decision === 'returned' ? 'Send back' : 'Reject', onclick: () => { if (decision === 'returned' && !ta.value.trim()) { toast('Say what to fix so the agent can act on it'); return; } closeModal(); finish(ta.value); }}))));
+    setTimeout(() => ta.focus(), 50);
+  }
+  function cancelTask(t) { confirmBox('Cancel this order?', t.order, 'Cancel order', () => { const at = nowISO(); saveTask(Object.assign({}, t, {status: 'cancelled', _mod: at, chain: (t.chain || []).concat([{at, by: myName(), text: 'Cancelled'}])}), 'task.cancel', {}); renderCommand(); }); }
+  // results from Claude: tasks: [{id, status, agent, order?, chain_add:[{at,by,text}], result:{summary,detail}, approval:{action,text}}], agents: [{id, status, note, at}]
+  function applyTasks(j) {
+    const notes = []; let n = 0; const g = j.generated_at || nowISO(); const L = (x) => Array.isArray(x) ? x : x && typeof x === 'object' ? Object.values(x) : [];
+    for (const inc of L(j.tasks)) {
+      if (!inc || !inc.id) continue; const id = String(inc.id);
+      let t = S.tasks[id]; if (!t) { t = {id, at: inc.at || g, by: inc.by || 'Duty Officer', order: inc.order || '', agent: AG[inc.agent] ? inc.agent : 'duty', report_id: inc.report_id ? String(inc.report_id) : '', cad: inc.cad || '', status: 'assigned', chain: []}; S.tasks[id] = t; }
+      const seen = new Set((t.chain || []).map((c) => `${c.at}|${c.by}|${c.text}`));
+      for (const c of L(inc.chain_add)) if (c && c.text && !seen.has(`${c.at}|${c.by}|${c.text}`)) t.chain = (t.chain || []).concat([{at: c.at || g, by: String(c.by || 'Duty Officer'), text: String(c.text)}]);
+      if (!newer(t._mod, g)) {   // you decided or cancelled after Claude wrote this: keep yours
+        const was = t.status;
+        if (inc.status && TST[inc.status]) t.status = inc.status;
+        if (inc.agent && AG[inc.agent]) t.agent = inc.agent;
+        if (inc.result) t.result = inc.result; if (inc.approval) t.approval = inc.approval;
+        if (t.status !== was) {
+          const lbl = `${AG[t.agent].name}: ${String(t.order).slice(0, 70)}`;
+          if (t.status === 'awaiting_you') { pop('approval', 'Awaiting your signature', (t.approval && t.approval.text) || lbl, t.report_id || ''); notes.push(`Awaiting your signature - ${(t.approval && t.approval.text) || lbl}`); }
+          else if (t.status === 'done') notes.push(`Done - ${lbl}${t.result && t.result.summary ? ': ' + String(t.result.summary).slice(0, 80) : ''}`);
+          else if (t.status === 'blocked') { pop('other', 'Agent task blocked', lbl, t.report_id || ''); notes.push(`Blocked - ${lbl}`); }
+        }
+      }
+      t.updated_at = maxs(t.updated_at, g); n++;
+    }
+    for (const a of L(j.agents)) if (a && AG[a.id]) { S.agent_status[a.id] = {id: a.id, status: a.status || 'idle', note: a.note || '', at: a.at || g}; n++; }
+    cmdCount(); return {n, notes};
+  }
+  let cmdFilter = store.get('cmdFilter', 'open'), cmdOpen = null, cmdDraft = '', cmdCall = '', cmdAgent = 'duty';
+  function agBox(a) {
+    const st = a.id === 'you' ? {status: 'command'} : (S.agent_status[a.id] || {status: 'idle'});
+    const open = a.id === 'you' ? tWaiting().length : taskList().filter((t) => t.agent === a.id && !TCLOSED.includes(t.status)).length;
+    return el('div', {class: 'ag ag-' + a.id + (a.id === 'you' ? ' you' : ''), title: a.role || ''}, el('div', {class: 'agrank', text: a.rank}), el('div', {class: 'agname'}, el('span', {class: 'agdot ' + (st.status || 'idle')}), a.name),
+      el('div', {class: 'note', text: a.id === 'you' ? `${open} awaiting your signature` : `${open} open · ${st.status || 'idle'}${st.at ? ' ' + fmtWhen(st.at) : ''}`}), st.note ? el('div', {class: 'note', text: st.note}) : null);
+  }
+  function renderCommand() {
+    const v = $('#v-command'); if (!v || v.hidden) { cmdCount(); return; }
+    const you = {id: 'you', name: `${myName()}${myNum() ? ' #' + myNum() : ''}`, rank: 'Command'};
+    // awaiting your signature
+    const wait = tWaiting();
+    const inbox = el('div', {class: 'sec' + (wait.length ? ' hot' : '')}, el('h3', {text: `Awaiting your signature (${wait.length})`}));
+    if (!wait.length) inbox.append(el('p', {class: 'note', text: 'Nothing needs you right now.'}));
+    for (const t of wait) { const g = (t.approval && t.approval.action) || 'other';
+      inbox.append(el('div', {class: 'sig'}, el('div', {}, el('span', {class: 'pill c-blocked', text: GATES[g] || GATES.other}), ' ', el('b', {text: (t.approval && t.approval.text) || t.order})),
+        el('div', {class: 'note', text: `${AG[t.agent].name}${t.cad ? ' · ' + t.cad : ''} · via Duty Officer${t.result && t.result.summary ? ' · ' + t.result.summary : ''}`}),
+        t.result && t.result.detail ? el('pre', {class: 'sigdetail', text: t.result.detail}) : null,
+        el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn go', text: 'Approve', onclick: () => decideTask(t, 'approved')}), el('button', {type: 'button', class: 'btn', text: 'Send back', onclick: () => decideTask(t, 'returned')}), el('button', {type: 'button', class: 'btn ghost', style: 'color:var(--bad)', text: 'Reject', onclick: () => decideTask(t, 'rejected')}),
+          t.report_id && S.reports[t.report_id] ? el('button', {type: 'button', class: 'link', text: 'Open the call', onclick: () => { show('calls'); openCall(t.report_id); }}) : null))); }
+    if (wait.length) inbox.append(el('p', {class: 'note', text: 'Approving here records your OK. Emails are still sent, and FireWorks still Completed, only when you say so in a chat - and Completes still need 913 or C9.'}));
+    // give an order
+    const openCalls = Object.values(S.reports).filter((r) => !r.test && OPEN.includes(r.stage)).sort((a, b) => (b.num || 0) - (a.num || 0));
+    if (cmdCall && !S.reports[cmdCall]) cmdCall = '';
+    const ta = el('textarea', {rows: 3, placeholder: 'e.g. Draft the 956 narrative from my notes, then QA it', 'aria-label': 'Order'}); ta.value = cmdDraft; ta.addEventListener('input', () => { cmdDraft = ta.value; });
+    const call = el('select', {'aria-label': 'Call this order is about'}, el('option', {value: '', text: 'No specific call'}), openCalls.map((r) => el('option', {value: r.id, text: `${r.num || r.id} · ${r.type || ''}${r.area ? ' · ' + r.area : ''}`}))); call.value = cmdCall;
+    const who = el('select', {'aria-label': 'Who gets the order'}, AGENTS.map((a) => el('option', {value: a.id, text: a.id === 'duty' ? 'Duty Officer (routes it)' : a.name}))); who.value = cmdAgent;
+    const pcl = el('ul', {class: 'pcl'}); const drawPc = () => pcl.replaceChildren(...precheck(call.value && S.reports[call.value], '').map((x) => el('li', {class: x.lvl, text: x.text})));
+    call.addEventListener('change', () => { cmdCall = call.value; drawPc(); }); who.addEventListener('change', () => { cmdAgent = who.value; }); drawPc();
+    const order = el('div', {class: 'sec'}, el('h3', {text: 'Give an order'}),
+      el('div', {class: 'row'}, QUICK.map((qk) => el('button', {type: 'button', class: 'chip', text: qk.label, onclick: () => { if (qk.needsCall && !call.value) { toast('Pick the call first'); call.focus(); return; } ta.value = cmdDraft = qk.order; who.value = cmdAgent = qk.agent; ta.focus(); }}))),
+      ta, el('div', {class: 'grid'}, el('label', {class: 'span2'}, 'Call', call), el('label', {class: 'span2'}, 'To', who)),
+      pcl, el('div', {class: 'row'}, el('span', {class: 'note grow', text: 'Orders go to Claude with the next sync. No patient names, ages or vitals in an order.'}), el('button', {type: 'button', class: 'btn primary', text: 'Issue order', onclick: () => issueOrder(ta.value, who.value, call.value)})));
+    // chain of command
+    const chain = el('div', {class: 'sec'}, el('h3', {text: 'Chain of command'}), el('p', {class: 'note', text: 'Orders go down, reports come up.'}),
+      el('div', {class: 'chain'}, el('div', {class: 'chainrow'}, agBox(you)), el('div', {class: 'chainline'}), el('div', {class: 'chainrow'}, agBox(AG.duty)), el('div', {class: 'chainline'}), el('div', {class: 'chainrow divs'}, AGENTS.filter((a) => a.to === 'duty').map(agBox))),
+      el('details', {}, el('summary', {class: 'note', style: 'min-height:var(--tap);display:flex;align-items:center;cursor:pointer', text: 'What each agent may do'}),
+        el('table', {class: 'agtable'}, el('tbody', {}, AGENTS.map((a) => el('tr', {}, el('th', {text: a.name}), el('td', {text: a.role}), el('td', {text: `${a.may}. Gate: ${a.gate}`})))))));
+    // task board
+    const all = taskList().sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
+    const F = {open: (t) => !TCLOSED.includes(t.status), you: (t) => t.status === 'awaiting_you', done: (t) => TCLOSED.includes(t.status), all: () => true};
+    const rows = all.filter(F[cmdFilter] || F.open);
+    const list = el('div', {class: 'list'});
+    if (!rows.length) list.append(el('div', {class: 'empty', text: all.length ? 'Nothing in this list.' : 'No orders yet. Give one above.'}));
+    for (const t of rows) { const ch = t.chain || []; const last = ch[ch.length - 1] || {};
+      list.append(el('button', {type: 'button', class: 'task b-' + (TCL[t.status] || 'done'), onclick: () => { cmdOpen = cmdOpen === t.id ? null : t.id; renderCommand(); }},
+        el('div', {}, el('b', {text: t.order}), el('div', {class: 'meta', text: `${fmtWhen(t.at)} · ${AG[t.agent] ? AG[t.agent].name : t.agent}${t.cad ? ' · ' + Number(t.cad.slice(-4)) : ''}${last.text ? ' · ' + last.by + ': ' + String(last.text).slice(0, 70) : ''}`})),
+        el('span', {class: 'pill c-' + (TCL[t.status] || 'done'), text: TST[t.status] || t.status})));
+      if (cmdOpen === t.id) list.append(el('div', {class: 'tdetail'},
+        t.result && t.result.summary ? el('p', {style: 'margin:0'}, el('b', {text: 'Result: '}), String(t.result.summary)) : null,
+        t.result && t.result.detail ? el('pre', {class: 'sigdetail', text: String(t.result.detail)}) : null,
+        (t.precheck || []).length ? el('div', {}, el('b', {class: 'note', text: 'QA pre-check when ordered'}), el('ul', {class: 'pcl'}, t.precheck.map((x) => el('li', {class: x.lvl, text: x.text})))) : null,
+        el('b', {class: 'note', text: 'Chain log'}), el('ol', {class: 'hist'}, ch.map((c) => el('li', {}, el('span', {class: 'note', text: `${fmtWhen(c.at)} · ${c.by}: `}), c.text))),
+        el('div', {class: 'row'}, t.report_id && S.reports[t.report_id] ? el('button', {type: 'button', class: 'btn', text: `Open call ${callName(t.report_id)}`, onclick: () => { show('calls'); openCall(t.report_id); }}) : null,
+          !TCLOSED.includes(t.status) ? el('button', {type: 'button', class: 'btn ghost', style: 'color:var(--bad)', text: 'Cancel order', onclick: () => cancelTask(t)}) : null))); }
+    const board = el('div', {class: 'sec'}, el('h3', {text: 'Task board'}),
+      el('div', {class: 'row'}, [['open', 'Open'], ['you', 'Waiting on you'], ['done', 'Closed'], ['all', 'All']].map(([k, l]) => el('button', {type: 'button', class: 'chip' + (cmdFilter === k ? ' on' : ''), text: `${l} (${all.filter(F[k]).length})`, onclick: () => { cmdFilter = k; store.set('cmdFilter', k); renderCommand(); }}))), list);
+    v.replaceChildren(el('div', {class: 'wrap'},
+      el('div', {class: 'row'}, el('div', {class: 'grow'}, el('h2', {style: 'margin:0;font:700 24px/1 var(--display)', text: 'Command'}), el('p', {class: 'note', text: 'Your AI crew. They run in Claude and report back through the sync.'})), el('button', {type: 'button', class: 'btn', text: 'Sync now', onclick: () => syncNow(true)})),
+      el('div', {class: 'cmdgrid'}, el('div', {style: 'display:flex;flex-direction:column;gap:14px'}, inbox, order), chain), board));
+    cmdCount();
+  }
+
   // ---------- views ----------
-  function show(v) { view = v; document.querySelectorAll('.tabbtn').forEach((b) => b.classList.toggle('on', b.dataset.view === v)); ['calls', 'mileage', 'crew', 'map', 'stats', 'settings'].forEach((x) => { $('#v-' + x).hidden = x !== v; }); store.set('view', v); render(); }
-  function render() { updateBackdrop(); ({calls: renderCalls, mileage: renderMileage, crew: renderCrew, map: renderMap, stats: renderStats, settings: renderSettings}[view] || renderCalls)(); renderSvc(); }
+  function show(v) { view = v; document.querySelectorAll('.tabbtn').forEach((b) => b.classList.toggle('on', b.dataset.view === v)); ['calls', 'command', 'mileage', 'crew', 'map', 'stats', 'settings'].forEach((x) => { $('#v-' + x).hidden = x !== v; }); store.set('view', v); render(); }
+  function render() { updateBackdrop(); ({calls: renderCalls, command: renderCommand, mileage: renderMileage, crew: renderCrew, map: renderMap, stats: renderStats, settings: renderSettings}[view] || renderCalls)(); renderSvc(); cmdCount(); }
   document.querySelectorAll('.tabbtn').forEach((b) => b.addEventListener('click', () => show(b.dataset.view)));
 
   // ---------- calls list ----------
