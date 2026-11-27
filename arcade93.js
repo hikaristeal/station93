@@ -198,7 +198,7 @@ class Component extends DCLogic {
       lvl: lvl, tx: 260 - i * 792,
       day: isDay, night: !isDay, sky: isDay ? '#7fbfff' : 'transparent',
       op0: ops[0], op1: ops[1], op2: ops[2], op3: ops[3], op4: ops[4], op5: ops[5], op6: ops[6],
-      bays: ['TA905','EG906'].map(function(u){ var ph = self.state[u]; var svc = self.state.svc[u]; var morn = !!self.state.mp && self.state.mu === u && ph === 'in'; var home = ph === 'in' && !morn; return { name: u, alt: u + ' in its bay', front: u === 'EG906' ? H.img('eg906-front.png') : H.img('ta905-front.png'), frontOp: home && svc ? 1 : 0, door: svc && (isDay || !home) ? 8 : 123, status: !svc ? 'OUT OF SVC' : morn ? 'MORNING CHECK' : home ? 'IN QTRS' : ph === 'back' ? 'RETURNING' : 'RESPONDING', light: !svc ? '#6b6f78' : morn ? '#FFD23F' : home ? '#3FB26B' : '#E0524A', lightCls: !svc || home || morn ? '' : 'lrr' }; }),
+      bays: ['TA905','EG906'].map(function(u){ var ph = self.state[u]; var svc = self.state.svc[u]; var morn = !!self.state.mp && self.state.mu === u && ph === 'in'; var home = ph === 'in' && !morn; return { name: u, alt: u + ' in its bay', front: u === 'EG906' ? H.img('eg906-front.png') : H.img('ta905-front.png'), frontOp: home && svc ? 1 : 0, door: svc && (isDay || !home) ? 8 : 123, status: !svc ? 'OUT OF SVC' : morn ? 'MORNING CHECK' : home ? 'IN QTRS' : ph === 'back' ? 'RETURNING' : 'RESPONDING', light: !svc ? '#6b6f78' : morn ? '#FFD23F' : home ? '#3FB26B' : '#E0524A', lightCls: !svc || home || morn ? '' : 's9-lrr' }; }),
       rigs: [
         { u: 'TA905', side: H.img('ta905-side.png'), w: 287, h: 112, start: 465 - 143,
           lights: [ { cls: 's9-lrw', x: 227, y: 7, w: 17, h: 9, d: 0 }, { cls: 's9-lra', x: 3, y: 73, w: 7, h: 7, d: .2 } ] },
