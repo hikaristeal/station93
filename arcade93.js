@@ -109,11 +109,12 @@ class Component extends DCLogic {
   short(id){ var c = this.state.crew.filter(function(m){ return m.id === id; })[0]; return c ? String(c.name).split(' ')[0].toUpperCase() : ''; }
   tick(){ this.nt = (this.nt || 0) + 1; if (this.nt % 25 === 1) this.syncReal(); var st = this.state, self = this, ws = Object.assign({}, st.ws), upd = {}, launch = [], moved = false;
     if (!st.mp && (this.props.timeOfDay ?? 'auto') === 'auto') { var now = new Date(), day = now.toDateString(); if (now.getHours() === 6 && this.lastMorning !== day) { this.lastMorning = day; this.startMorning(); } }
+    var tod0 = this.props.timeOfDay ?? 'auto', hr0 = new Date().getHours(); var night = tod0 === 'night' || (tod0 === 'auto' && (hr0 < 6 || hr0 >= 18));
     var mk = st.mp ? this.mk() : '';
     this.onDuty().forEach(function(m, n){ var key = m.id; var w = Object.assign({}, self.wOf(key)); w.f = w.f ? 0 : 1;
       if (key === mk) { self.morningStep(w, upd); ws[key] = w; moved = true; return; }
       var c = self.chs[key];
-      if (m.act === 'inside' && w.mode !== 'run' && !(w.mode === 'gone' && w.unit)) { self.chs[key] = null; w.mode = 'hidden'; w.x = 560 + (n % 3) * 20; w.label = ''; w.prop = ''; w.jump = false; w.unit = ''; ws[key] = w; moved = true; return; }
+      if ((m.act === 'inside' || night) && w.mode !== 'run' && !(w.mode === 'gone' && w.unit)) { self.chs[key] = null; w.mode = 'hidden'; w.x = 560 + (n % 3) * 20; w.label = ''; w.prop = ''; w.jump = false; w.unit = ''; ws[key] = w; moved = true; return; }
       if (w.mode === 'hidden') w.mode = 'patrol';
       if (w.mode === 'gone' && !(c && c.kind === 'enter')) return;
       if (w.mode === 'patrol' || w.mode === 'chore' || w.mode === 'gone' || w.mode === 'task') { if (w.mode === 'task') w.mode = 'patrol'; self.chore(w, key); ws[key] = w; moved = true; return; }
@@ -197,7 +198,7 @@ class Component extends DCLogic {
       lvl: lvl, tx: 260 - i * 792,
       day: isDay, night: !isDay, sky: isDay ? '#7fbfff' : 'transparent',
       op0: ops[0], op1: ops[1], op2: ops[2], op3: ops[3], op4: ops[4], op5: ops[5], op6: ops[6],
-      bays: ['TA905','EG906'].map(function(u){ var ph = self.state[u]; var svc = self.state.svc[u]; var morn = !!self.state.mp && self.state.mu === u && ph === 'in'; var home = ph === 'in' && !morn; return { name: u, alt: u + ' in its bay', front: u === 'EG906' ? H.img('eg906-front.png') : H.img('ta905-front.png'), frontOp: home && svc ? 1 : 0, door: svc ? 8 : 123, status: !svc ? 'OUT OF SVC' : morn ? 'MORNING CHECK' : home ? 'IN QTRS' : ph === 'back' ? 'RETURNING' : 'RESPONDING', light: !svc ? '#6b6f78' : morn ? '#FFD23F' : home ? '#3FB26B' : '#E0524A', lightCls: !svc || home || morn ? '' : 'lrr' }; }),
+      bays: ['TA905','EG906'].map(function(u){ var ph = self.state[u]; var svc = self.state.svc[u]; var morn = !!self.state.mp && self.state.mu === u && ph === 'in'; var home = ph === 'in' && !morn; return { name: u, alt: u + ' in its bay', front: u === 'EG906' ? H.img('eg906-front.png') : H.img('ta905-front.png'), frontOp: home && svc ? 1 : 0, door: svc && (isDay || !home) ? 8 : 123, status: !svc ? 'OUT OF SVC' : morn ? 'MORNING CHECK' : home ? 'IN QTRS' : ph === 'back' ? 'RETURNING' : 'RESPONDING', light: !svc ? '#6b6f78' : morn ? '#FFD23F' : home ? '#3FB26B' : '#E0524A', lightCls: !svc || home || morn ? '' : 'lrr' }; }),
       rigs: [
         { u: 'TA905', side: H.img('ta905-side.png'), w: 287, h: 112, start: 465 - 143,
           lights: [ { cls: 's9-lrw', x: 227, y: 7, w: 17, h: 9, d: 0 }, { cls: 's9-lra', x: 3, y: 73, w: 7, h: 7, d: .2 } ] },
