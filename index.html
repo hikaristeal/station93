@@ -424,7 +424,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
 <script>
 (function () {
   'use strict';
-  const APPV = '2.10.0';
+  const APPV = '2.10.1';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -1345,7 +1345,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
   const CHECK_ITEMS = ['Fluids (oil, coolant, transmission)', 'Fuel 3/4 or more', 'Lights and siren', 'Tires and body', 'O2 cylinders full', 'AED ready, pads in date', 'SCBA bottles full', 'Tools and equipment in place', 'Radio and charger'];
   const lastCheck = (unit) => Object.values(S.checks || {}).filter((c) => c.unit === unit).sort((a, b) => String(b.at).localeCompare(String(a.at)))[0];
   const checkSummary = (c) => { const iss = Object.entries(c.items || {}).filter(([, v2]) => v2 === 'issue').map(([k]) => k); return iss.length ? `${iss.length} issue${iss.length > 1 ? 's' : ''}: ${iss.join(', ')}` : 'all OK'; };
-  function lastReading(unit) { const m = S.mileage[unit]; const rows = (m && m.rows) || []; const last = rows[rows.length - 1]; return last && last.end !== '' ? Number(last.end) : null; }
+  function lastReading(unit) { const b = begOf(unit); return b.mi !== '' ? Number(b.mi) : null; }
   function serviceInfo(a) { if (!a.service_every || a.service_last === '' || a.service_last == null) return null; const cur = lastReading(a.unit); if (cur == null) return null; const left = Number(a.service_last) + Number(a.service_every) - cur; return {left, due: left <= 0, soon: left > 0 && left <= 300}; }
   function openCheck(a) {
     const prev = lastCheck(a.unit); const st = {}; const notes = el('textarea', {rows: '2', placeholder: 'Anything to report (low fluid, damage, missing item)'});
@@ -1802,15 +1802,16 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     const pickVeh = unitcrew.map((u) => u.unit).find((u) => S.mileage[u]); if (pickVeh) veh.value = pickVeh;
     const endMi = el('input', {type: 'text', inputmode: 'decimal', placeholder: 'A903: 166382.4', style: 'max-width:200px'}); const endH = el('input', {type: 'text', inputmode: 'numeric', placeholder: 'Hours', style: 'max-width:140px'});
     const begInfo = el('span', {class: 'note'});
-    const syncVeh = () => { const m = S.mileage[veh.value]; const last = m && (m.rows || [])[m.rows.length - 1]; const st0 = m && m.meta && m.meta.start; begInfo.textContent = last ? `starts at ${last.end}` : st0 ? `starts at ${st0}` : ''; endH.hidden = !milHrs(veh.value); };
+    const begMi = el('input', {type: 'text', readonly: true, 'aria-label': 'Beginning reading', title: 'Beginning = last recorded ending reading', style: 'max-width:200px'}); const begH = el('input', {type: 'text', readonly: true, 'aria-label': 'Beginning hours', title: 'Beginning hours = last recorded ending hours', style: 'max-width:140px'});
+    const syncVeh = () => { const b = begOf(veh.value); begMi.value = b.mi; begH.value = b.h; begMi.placeholder = 'Begin'; begH.placeholder = 'Begin hrs'; begInfo.textContent = b.mi ? `Begin ${b.mi}${b.h ? ' / ' + b.h + ' h' : ''} (${b.from})` : 'No earlier reading for this unit'; endH.hidden = !milHrs(veh.value); begH.hidden = !milHrs(veh.value); };
     veh.addEventListener('change', syncVeh); syncVeh();
     const clrBtn = el('button', {type: 'button', class: 'btn primary', text: 'Clear call', onclick: () => clearCall(veh.value, endMi.value.trim(), endH.value.trim())});
     const clrNote = el('p', {class: 'note'}); const clrTitle = el('span', {text: 'Clear call'});
-    body.append(el('div', {class: 'sec', id: 'clrSec'}, el('h3', {}, clrTitle, el('span', {class: 'grow'}), el('span', {class: 'note', text: r.cleared_at ? `Cleared ${fmtWhen(r.cleared_at)}${r.cleared_miles ? ' at ' + r.cleared_miles : ''}` : ''})),
-      el('div', {class: 'row'}, veh, endMi, endH, begInfo, clrBtn), clrNote));
+    body.append(el('div', {class: 'sec', id: 'clrSec'}, el('h3', {}, clrTitle, el('span', {class: 'grow'}), el('span', {class: 'note', text: r.cleared_at ? `Cleared ${fmtWhen(r.cleared_at)}${r.cleared_miles ? ' at ' + (r.cleared_beg ? r.cleared_beg + ' → ' : '') + r.cleared_miles : ''}` : ''})),
+      el('div', {class: 'row'}, veh, el('span', {class: 'note', text: 'Begin'}), begMi, begH, el('span', {class: 'note', text: 'End'}), endMi, endH, clrBtn), begInfo, clrNote));
     // test calls: mileage is emptied and locked so a practice run can never add a row to an in-service apparatus log
     const lockMiles = () => { const t = !!r.test;
-      [veh, endMi, endH].forEach((x) => { x.disabled = t; x.classList.toggle('locked', t); }); if (t) { endMi.value = ''; endH.value = ''; } else syncVeh();
+      [veh, endMi, endH, begMi, begH].forEach((x) => { x.disabled = t; x.classList.toggle('locked', t); }); if (t) { endMi.value = ''; endH.value = ''; begMi.value = ''; begH.value = ''; } else syncVeh();
       if (t) begInfo.textContent = 'Mileage locked - test call';
       clrTitle.textContent = t ? 'Clear test call (mileage locked)' : 'Clear call'; clrBtn.textContent = t ? 'Clear test call' : 'Clear call';
       clrNote.textContent = t ? 'Test call: no mileage row is added to any apparatus log and your service status does not change.' : 'Adds the mileage row (purpose and CAD filled in) and marks the call cleared.'; };
@@ -1864,14 +1865,14 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
       if (r.test) { const saved = await save(); if (!saved) return; await put('reports/' + saved.id, {cleared_at: nowISO(), needs: 'Test call - cleared (no mileage)'}, true); toast('Test call cleared - no mileage row added'); close(); render(); return; }
       const m = S.mileage[v]; if (!m) { toast('Pick a unit'); return; }
       const dec = milDec(v); if (dec && !tenthsRe(v).test(end)) { toast(`${v} needs tenths, for example ${v === 'A903' ? '166382.4' : '12345.6'}`); return; } if (!dec && !/^\d+$/.test(end)) { toast('Enter the ending reading'); return; }
-      const last = (m.rows || [])[m.rows.length - 1]; const beg = last ? last.end : String((m.meta && m.meta.start) || '');
+      const b0 = begOf(v); const beg = b0.mi;
       const go = async () => {
         const saved = await save(); if (!saved) return;
         const d = new Date(); const t = saved.type || ''; const purpose = /fire|alarm|smoke|brush|grass/i.test(t) ? 'Fire - ' + t : /tree|line|service|hazard|storm|public/i.test(t) ? 'Service - ' + t : 'EMS - ' + t;
-        const row = {date: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`, beg, end, beg_h: last ? (last.end_h || '') : String((S.mileage[v] && S.mileage[v].meta && S.mileage[v].meta.start_h) || ''), end_h: endh, purpose, comments: `CAD ${saved.cad} - ${t}`.trim(), initials: myInitials()};
+        const row = {date: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`, beg, end, beg_h: b0.h, end_h: endh, purpose, comments: `CAD ${saved.cad} - ${t}`.trim(), initials: myInitials()};
         await addMileRow(v, row);
         const miss = []; if (!saved.unitcrew.some((u) => u.members.length)) miss.push('crew'); if (!saved.notes.trim()) miss.push('notes'); if (!saved.narrative.trim()) miss.push('narrative'); if (!saved.zone || saved.zone === '—') miss.push('zone');
-        const upd = {cleared_at: nowISO(), cleared_miles: end}; if (saved.stage === 'Needs info') upd.needs = miss.length ? 'Cleared - needs ' + miss.join(', ') : 'Cleared - ready for narrative review';
+        const upd = {cleared_at: nowISO(), cleared_miles: end, cleared_beg: beg, cleared_unit: v}; if (saved.stage === 'Needs info') upd.needs = miss.length ? 'Cleared - needs ' + miss.join(', ') : 'Cleared - ready for narrative review';
         Object.assign(saved, upd); await put('reports/' + saved.id, upd, true);
         toast(`${v} row ${m.rows.length} added (${beg || '?'} → ${end})`); close(); render();
       };
@@ -2002,25 +2003,27 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
       const vehs = Object.keys(S.mileage).sort(); const pick = vehs.find((v) => onCall.includes(v)) || vehs.find((v) => mine.includes(v)) || vehs[0];
       const sel = el('select', {id: 'respVeh', 'aria-label': 'Unit'}, vehs.map((v) => el('option', {value: v, text: v, selected: v === pick})));
       const end = el('input', {type: 'text', id: 'respEnd', inputmode: 'decimal', placeholder: 'Ending reading'}); const endH = el('input', {type: 'text', id: 'respEndH', inputmode: 'numeric', placeholder: 'Ending hours'});
-      const info = el('p', {class: 'note'}); const sync = () => { const m = S.mileage[sel.value]; const last = m && (m.rows || [])[m.rows.length - 1]; info.textContent = `${milDec(sel.value) ? sel.value + ' needs tenths (000000.0). ' : ''}${last ? 'Last reading ' + last.end + (last.end_h ? ' / ' + last.end_h + ' h' : '') : m && m.meta && m.meta.start ? 'Starts at ' + m.meta.start : ''}`; endH.hidden = !milHrs(sel.value); };
-      sel.addEventListener('change', sync); sync();
-      modal(el('div', {class: 'box', role: 'dialog', 'aria-label': 'Clear the call'}, el('h2', {text: `Clear call ${r.num}`}), el('div', {class: 'grid'}, el('label', {}, 'Unit', sel), el('label', {}, 'Ending reading', end), el('label', {}, 'Ending hours', endH)), info,
+      const begR = el('input', {type: 'text', id: 'respBeg', readonly: true, title: 'Beginning = last recorded ending reading'}); const begRH = el('input', {type: 'text', id: 'respBegH', readonly: true, title: 'Beginning hours = last recorded ending hours'});
+      const info = el('p', {class: 'note'}); const sync = () => { const b = begOf(sel.value); begR.value = b.mi; begRH.value = b.h; info.textContent = `${milDec(sel.value) ? sel.value + ' needs tenths (000000.0). ' : ''}${b.mi ? 'Beginning is the ' + b.from + '.' : 'No earlier reading for this unit.'}`; endH.hidden = !milHrs(sel.value); begRH.closest && begRH.parentElement && (begRH.parentElement.hidden = !milHrs(sel.value)); if (endH.parentElement) endH.parentElement.hidden = !milHrs(sel.value); };
+      sel.addEventListener('change', sync);
+      modal(el('div', {class: 'box', role: 'dialog', 'aria-label': 'Clear the call'}, el('h2', {text: `Clear call ${r.num}`}), el('div', {class: 'grid'}, el('label', {}, 'Unit', sel), el('label', {}, 'Beginning reading', begR), el('label', {}, 'Ending reading', end), el('label', {}, 'Beginning hours', begRH), el('label', {}, 'Ending hours', endH)), info,
         el('div', {class: 'row', style: 'justify-content:flex-end'}, el('button', {type: 'button', class: 'btn ghost', text: 'Cancel', onclick: closeModal}), el('button', {type: 'button', class: 'btn ghost', text: 'Clear without mileage', onclick: () => finish(null)}), el('button', {type: 'button', class: 'btn primary', text: 'Clear call', onclick: () => finish(sel.value)}))));
+      sync();
       async function finish(v) {
         let row = null;
         if (r.test) v = null;
         if (v) {
           const m = S.mileage[v]; const e = end.value.trim(); const dec = milDec(v);
           if (dec && !tenthsRe(v).test(e)) { toast(`${v} needs tenths: 000000.0`); return; } if (!dec && !/^\d+$/.test(e)) { toast('Enter the ending reading'); return; }
-          const last = (m.rows || [])[m.rows.length - 1]; const beg = last ? last.end : String((m.meta && m.meta.start) || '');
+          const b0 = begOf(v); const beg = b0.mi;
           if (beg && Number(e) <= Number(beg)) { toast(`End ${e} is not higher than the last reading ${beg}`); return; }
           const d = new Date(); const t = r.type || ''; const purpose = /fire|alarm|smoke|brush|grass/i.test(t) ? 'Fire - ' + t : /tree|line|service|hazard|storm|public/i.test(t) ? 'Service - ' + t : 'EMS - ' + t;
-          row = {date: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`, beg, end: e, beg_h: last ? (last.end_h || '') : String((S.mileage[v] && S.mileage[v].meta && S.mileage[v].meta.start_h) || ''), end_h: endH.value.trim(), purpose, comments: `CAD ${r.cad} - ${t}`.trim(), initials: myInitials()};
+          row = {date: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`, beg, end: e, beg_h: b0.h, end_h: endH.value.trim(), purpose, comments: `CAD ${r.cad} - ${t}`.trim(), initials: myInitials()};
           await addMileRow(v, row);
         }
         closeModal();
         const now = nowISO(); const miss = []; if (!(r.unitcrew || []).some((u) => u.members && u.members.length)) miss.push('crew'); if (!String(r.notes || '').trim()) miss.push('notes'); if (!String(r.narrative || '').trim()) miss.push('narrative');
-        const f = {resp: Object.assign({}, r.resp || {}, {cleared: now}), cleared_at: now}; if (row) f.cleared_miles = row.end; if (!r.stage || r.stage === 'Needs info') f.needs = miss.length ? 'Cleared - needs ' + miss.join(', ') : 'Cleared - ready for narrative review';
+        const f = {resp: Object.assign({}, r.resp || {}, {cleared: now}), cleared_at: now}; if (row) { f.cleared_miles = row.end; f.cleared_beg = row.beg; f.cleared_unit = v; } if (!r.stage || r.stage === 'Needs info') f.needs = miss.length ? 'Cleared - needs ' + miss.join(', ') : 'Cleared - ready for narrative review';
         await save(f);
         const me = Object.values(S.crew).find((c) => c.name === ME);
         if (me && me.status !== 'In service') { await setStatus('crew', me, 'In service'); for (const u of units(me.assigned)) { const a = Object.values(S.apparatus).find((x) => x.unit === u); if (a && a.status !== 'In service') await setStatus('apparatus', a, 'In service'); } }
@@ -2054,6 +2057,16 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
   }
   const milDec = (v) => { const m = S.mileage[v]; return m && m.meta && 'tenths' in m.meta ? !!m.meta.tenths : v === 'A903'; };
   const milHrs = (v) => { const m = S.mileage[v]; return m && m.meta && 'hours' in m.meta ? !!m.meta.hours : v === 'EG906'; };
+  // Beginning reading = the last recorded ending reading for that unit (this month's log, else the newest closed month, else the log's starting reading)
+  function begOf(v) {
+    const m = S.mileage[v]; if (!m) return {mi: '', h: '', from: ''};
+    const last = (m.rows || []).slice().reverse().find((x) => x && String(x.end || '') !== '');
+    if (last) return {mi: String(last.end), h: String(last.end_h || ''), from: 'last ending ' + (last.date || '')};
+    const arch = Object.entries(S.mileage_archive || {}).filter(([k, x]) => (x.vehicle || k.split('-')[0]) === v).map(([, x]) => x).sort((a, b) => (Number(b.page) || 0) - (Number(a.page) || 0))[0];
+    const al = arch && (arch.rows || []).slice().reverse().find((x) => x && String(x.end || '') !== '');
+    if (al) return {mi: String(al.end), h: String(al.end_h || ''), from: 'last ending ' + (al.date || '')};
+    return {mi: String((m.meta && m.meta.start) || ''), h: String((m.meta && m.meta.start_h) || ''), from: 'log start'};
+  }
   const tenthsRe = (v) => v === 'A903' ? /^\d{6}\.\d$/ : /^\d+\.\d$/;
   function openLogSettings(v) {
     const isNew = !v; const m = v ? S.mileage[v] : null;
@@ -2094,14 +2107,14 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
       const d = new Date(); const today = `${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}/${String(d.getFullYear()).slice(2)}`;
       const fi = {}; const mk = (k, ph, val, w) => { fi[k] = el('input', {type: 'text', placeholder: ph, value: val || '', inputmode: /beg|end/.test(k) ? 'decimal' : null}); return el('label', {class: w || ''}, ph, fi[k]); };
       v.append(el('details', {class: 'sec', style: 'margin-top:12px'}, el('summary', {}, el('b', {text: `Add a row - ${milV}`})), el('div', {class: 'grid', style: 'margin-top:10px'},
-        mk('date', 'Date', today), mk('beg', dec ? 'Begin (000000.0)' : 'Begin miles', last ? last.end : String((cur.meta && cur.meta.start) || '')), mk('end', dec ? 'End (000000.0)' : 'End miles'), hrs ? mk('end_h', 'End hours') : el('span'),
+        mk('date', 'Date', today), mk('beg', dec ? 'Begin (000000.0)' : 'Begin miles', begOf(milV).mi), mk('end', dec ? 'End (000000.0)' : 'End miles'), hrs ? mk('end_h', 'End hours') : el('span'),
         mk('purpose', 'Purpose', '', 'span2'), mk('comments', 'Comments', '', 'span2')), el('div', {class: 'row', style: 'margin-top:8px'}, el('button', {type: 'button', class: 'btn primary', text: 'Add row', onclick: async () => {
-          const row = {date: fi.date.value.trim(), beg: fi.beg.value.trim(), end: fi.end.value.trim(), beg_h: last ? (last.end_h || '') : String((S.mileage[v] && S.mileage[v].meta && S.mileage[v].meta.start_h) || ''), end_h: fi.end_h ? fi.end_h.value.trim() : '', purpose: fi.purpose.value.trim(), comments: fi.comments.value.trim(), initials: myInitials()};
+          const row = {date: fi.date.value.trim(), beg: fi.beg.value.trim(), end: fi.end.value.trim(), beg_h: begOf(milV).h, end_h: fi.end_h ? fi.end_h.value.trim() : '', purpose: fi.purpose.value.trim(), comments: fi.comments.value.trim(), initials: myInitials()};
           if (!/^\d\d\/\d\d\/\d\d$/.test(row.date)) { toast('Date looks like 11/26/26'); return; }
           if (dec && (!tenthsRe(milV).test(row.beg) || !tenthsRe(milV).test(row.end))) { toast(`${milV} needs tenths: 000000.0`); return; }
           if (!row.purpose) { toast('Add a purpose'); return; }
           const doIt = async () => { await addMileRow(milV, row); toast(`${milV} row added`); renderMileage(); };
-          const probs = []; if (Number(row.end) <= Number(row.beg)) probs.push('End is not higher than begin.'); if (last && row.beg !== last.end) probs.push(`Begin ${row.beg} doesn't match the last end ${last.end}.`); if (Number(row.end) - Number(row.beg) > 200) probs.push('Over 200 miles in one row.');
+          const probs = []; if (Number(row.end) <= Number(row.beg)) probs.push('End is not higher than begin.'); { const lb = begOf(milV).mi; if (lb && row.beg !== lb) probs.push(`Begin ${row.beg} doesn't match the last end ${lb}.`); } if (Number(row.end) - Number(row.beg) > 200) probs.push('Over 200 miles in one row.');
           if (probs.length) confirmBox('Check the readings', probs.join(' ') + ' Add it anyway?', 'Add row', doIt); else doIt();
         }}), el('span', {class: 'note', text: 'Clear call adds rows automatically. The first row of a new month starts that month\'s log.'}))));
     } else v.append(el('p', {class: 'note', style: 'margin-top:10px', text: viewing.month ? 'Finished month - read only.' : 'Finished page from the old 16-row log - read only.'}));
