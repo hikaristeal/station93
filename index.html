@@ -284,6 +284,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
 .arc .a-fire{font-size:10px;color:#F28C28;border:3px solid #F28C28;padding:6px 8px}.arc .a-blink{animation:arcblink 1.1s steps(1) infinite;color:#FFD23F;font-size:10px}
 .arc .a-scene{position:relative;z-index:2;flex:0 0 auto;overflow:hidden;margin-top:12px;background:#0d0a14}.arc .a-scin{position:absolute;left:0;top:0;width:1280px;height:292px;transform-origin:0 0}
 .arc .a-build{min-height:0}
+.arc .a-clock{font-size:11px;color:#FFD23F;letter-spacing:1px;margin-top:6px}
 .arc .a-vp{position:relative;z-index:2;flex:1;min-height:0;overflow:hidden;margin:16px 0 0;touch-action:pan-y}
 .arc .a-track{display:flex;height:100%;transition:transform .36s steps(6)}
 .arc .a-card{flex:0 0 100%;box-sizing:border-box;padding:0 24px 8px;height:100%}
@@ -394,7 +395,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
 <script>
 (function () {
   'use strict';
-  const APPV = '2.7.4';
+  const APPV = '2.7.5';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -1051,7 +1052,8 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
   function openArcade() {
     $('#arcHost') && $('#arcHost').remove();
     const host = el('div', {class: 'arc', id: 'arcHost', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'AVFD dashboard'}); document.body.append(host);
-    let arc93 = null; const close = () => { if (arc93) arc93.unmount(); removeEventListener('resize', fit); host.remove(); document.removeEventListener('keydown', key); };
+    const clockEl = el('div', {class: 'a-clock p2', 'aria-label': 'Time, 24-hour'}); const tickClock = () => { const d = new Date(); clockEl.textContent = `${pad2(d.getHours())}${pad2(d.getMinutes())} HRS`; }; tickClock(); const clockIv = setInterval(tickClock, 5000);
+    let arc93 = null; const close = () => { clearInterval(clockIv); if (arc93) arc93.unmount(); removeEventListener('resize', fit); host.remove(); document.removeEventListener('keydown', key); };
     const then = (fn) => () => { close(); fn(); };
     const key = (e) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') goTo(arcIdx + 1); else if (e.key === 'ArrowLeft') goTo(arcIdx - 1); };
     document.addEventListener('keydown', key);
@@ -1106,7 +1108,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     const W = Math.max(innerWidth, 360);
     host.append(el('div', {class: 'a-scan', 'aria-hidden': 'true'}),
       ...Array.from({length: 10}, (_, k) => el('div', {class: 'a-ember', 'aria-hidden': 'true', style: `left:${((k + 0.5) / 10 * 100).toFixed(1)}%;animation-delay:${(k * 0.37 % 3.2).toFixed(2)}s`})),
-      el('div', {class: 'a-atop'}, pxEl('0 0 11 11', 40, 40, PX_X), el('div', {}, el('h2', {class: 'p2', text: 'AVFD · STATION 93'}), el('small', {text: 'ARGYLE FIRE COMMAND CONSOLE'})), el('span', {class: 'grow', style: 'flex:1'}), el('span', {class: 'a-fire p2', title: 'Flames grow with the share of reports still open', text: `FIRE LEVEL ${Math.round(firePct * 100)}%`}), el('span', {class: 'a-blink p2', 'aria-hidden': 'true', text: '◀ SWIPE ▶'}), el('button', {type: 'button', class: 'px red', 'aria-label': 'Close dashboard', text: 'X', onclick: close})),
+      el('div', {class: 'a-atop'}, pxEl('0 0 11 11', 40, 40, PX_X), el('div', {}, el('h2', {class: 'p2', text: 'AVFD · STATION 93'}), clockEl, el('small', {text: 'ARGYLE FIRE COMMAND CONSOLE'})), el('span', {class: 'grow', style: 'flex:1'}), el('span', {class: 'a-fire p2', title: 'Flames grow with the share of reports still open', text: `FIRE LEVEL ${Math.round(firePct * 100)}%`}), el('span', {class: 'a-blink p2', 'aria-hidden': 'true', text: '◀ SWIPE ▶'}), el('button', {type: 'button', class: 'px red', 'aria-label': 'Close dashboard', text: 'X', onclick: close})),
       scene, vp,
       el('div', {class: 'a-nav'}, el('button', {type: 'button', class: 'px', 'aria-label': 'Previous card', text: '◀', onclick: () => goTo(arcIdx - 1)}), dots, el('button', {type: 'button', class: 'px', 'aria-label': 'Next card', text: '▶', onclick: () => goTo(arcIdx + 1)})),
       el('div', {class: 'a-floor', 'aria-hidden': 'true'}, flameCols(Math.min(80, Math.round(W / 20)), Math.round(50 * fk), Math.max(4, Math.round(70 * fk)), 37)));
