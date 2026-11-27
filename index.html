@@ -395,7 +395,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
 <script>
 (function () {
   'use strict';
-  const APPV = '2.9.0';
+  const APPV = '2.9.1';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -408,6 +408,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
 
   const STAGES = ['Needs info', 'Draft staged', 'Awaiting C9', 'Ready to Complete', 'Blocked', "Other's report", 'Completed'];
   const OPEN = STAGES.slice(0, 5);
+  const SL = (x) => x === 'Awaiting C9' ? 'Approved Narratives' : x; // display name only - the stored stage stays 'Awaiting C9'
   const CLS = {'Needs info': 'needs', 'Draft staged': 'draft', 'Awaiting C9': 'c9', 'Ready to Complete': 'ready', 'Blocked': 'blocked', "Other's report": 'done', 'Completed': 'done'};
   let ME = store.get('me', '');
   const meRec = () => Object.values(S.crew).find((c) => c.mine) || Object.values(S.crew).find((c) => c.name === ME) || null;
@@ -791,7 +792,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
         const cur = map[id]; if (!takeIn(c, cur, r)) continue;
         if ((c === 'crew' || c === 'apparatus') && cur) popStatus(c, cur, r);
         if (c === 'reports' && !cur) pop('call', `New call ${r.num || id}`, [r.type, r.area].filter(Boolean).join(' · '), id);
-        else if (c === 'reports' && r.stage && r.stage !== cur.stage) pop(r.stage === 'Ready to Complete' ? 'approval' : 'other', `${r.num || id}: ${r.stage}`, r.needs || '', id);
+        else if (c === 'reports' && r.stage && r.stage !== cur.stage) pop(r.stage === 'Ready to Complete' ? 'approval' : 'other', `${r.num || id}: ${SL(r.stage)}`, r.needs || '', id);
         map[id] = JSON.parse(JSON.stringify(r)); n++;
       }
     }
@@ -1124,7 +1125,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     const oldest = open.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
     return el('div', {class: 'sec progress'}, el('h3', {text: 'Report progress'}),
       el('div', {class: 'rings'}, ring('This week', ...per(isoDay(wk)), go('Completed')), ring('This month', ...per(`${now.getFullYear()}-${pad2(now.getMonth() + 1)}-01`), go('Completed')), ring('This year', ...per(`${now.getFullYear()}-01-01`), go('Completed'))),
-      el('div', {}, OPEN.map((s) => { const n = open.filter((r) => r.stage === s).length; return el('button', {type: 'button', class: 'bar stagebar', onclick: go(s)}, el('span', {class: 'bl', text: s}), el('span', {class: 'bt'}, el('i', {class: 'c-bg-' + CLS[s], style: `width:${(n / max * 100).toFixed(1)}%`})), el('b', {text: String(n)})); })),
+      el('div', {}, OPEN.map((s) => { const n = open.filter((r) => r.stage === s).length; return el('button', {type: 'button', class: 'bar stagebar', onclick: go(s)}, el('span', {class: 'bl', text: SL(s)}), el('span', {class: 'bt'}, el('i', {class: 'c-bg-' + CLS[s], style: `width:${(n / max * 100).toFixed(1)}%`})), el('b', {text: String(n)})); })),
       oldest ? el('p', {class: 'note' + (ageDays(oldest) >= 7 ? ' warnline' : ''), text: `Oldest open report: ${oldest.num} (${fmtDate(oldest.date)}, ${ageDays(oldest)} days, ${oldest.stage})`}) : el('p', {class: 'note', text: 'No open reports.'}));
   }
   function streakChip() {
@@ -1245,7 +1246,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     rk.addEventListener('change', () => { cfg.rank = rk.value.trim(); saveCfg(); toast('Saved'); });
     const mx = Math.max(1, ...OPEN.map((s2) => open.filter((r) => r.stage === s2).length));
     const SC = {'Needs info': '#F28C28', 'Draft staged': '#FFD23F', 'Awaiting C9': '#4A8FE0', 'Ready to Complete': '#3FB26B', 'Blocked': '#E0524A'};
-    const bars = OPEN.map((s2) => { const n = open.filter((r) => r.stage === s2).length; const on = Math.round(n / mx * 10); return el('button', {type: 'button', class: 'a-bar', style: 'background:none;border:0;color:inherit;font:inherit;padding:0;cursor:pointer;text-align:left', onclick: then(() => { filter = s2; store.set('filter', s2); show('calls'); })}, el('span', {class: 'a-bl', text: s2}), el('span', {class: 'a-cells'}, Array.from({length: 10}, (_, k) => el('i', {style: k < on ? 'background:' + SC[s2] : ''}))), el('b', {class: 'a-bn p2', style: 'color:' + SC[s2], text: String(n)})); });
+    const bars = OPEN.map((s2) => { const n = open.filter((r) => r.stage === s2).length; const on = Math.round(n / mx * 10); return el('button', {type: 'button', class: 'a-bar', style: 'background:none;border:0;color:inherit;font:inherit;padding:0;cursor:pointer;text-align:left', onclick: then(() => { filter = s2; store.set('filter', s2); show('calls'); })}, el('span', {class: 'a-bl', text: SL(s2)}), el('span', {class: 'a-cells'}, Array.from({length: 10}, (_, k) => el('i', {style: k < on ? 'background:' + SC[s2] : ''}))), el('b', {class: 'a-bn p2', style: 'color:' + SC[s2], text: String(n)})); });
     const overdue = R.filter((r) => ['Needs info', 'Draft staged'].includes(r.stage) && ageDays(r) >= 7).length;
     const ap = Object.values(S.apparatus).filter((a) => a.unit).sort((a, b) => a.unit.localeCompare(b.unit));
     const crewOn = (un) => Object.values(S.crew).filter((c) => units(c.assigned).includes(un)).map((c) => lastName(c.name));
@@ -1386,9 +1387,9 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     const v = $('#v-calls'); v.replaceChildren();
     const all = Object.values(S.reports).filter((r) => !r.test);
     if (!S.ready && !all.length) { v.append(el('div', {class: 'empty', text: 'No calls on this tablet yet. Open Settings, connect Google Drive, then tap Sync now.'})); return; }
-    const chips = el('div', {class: 'row'}, [['', 'All open'], ...STAGES.map((s) => [s, s]), ['Mine', 'Assigned to me'], ['Tests', 'Tests']].map(([k, l]) => el('button', {type: 'button', class: 'chip' + (filter === k ? ' on' : ''), text: l, onclick: () => { filter = k; store.set('filter', k); renderCalls(); }})));
+    const chips = el('div', {class: 'row'}, [['', 'All open'], ...STAGES.map((s) => [s, SL(s)]), ['Mine', 'Assigned to me'], ['Tests', 'Tests']].map(([k, l]) => el('button', {type: 'button', class: 'chip' + (filter === k ? ' on' : ''), text: l, onclick: () => { filter = k; store.set('filter', k); renderCalls(); }})));
     const search = el('input', {type: 'search', id: 'q', placeholder: 'Search CAD, street, type…', value: q, 'aria-label': 'Search calls'}); search.addEventListener('input', () => { q = search.value; renderList(); });
-    const tiles = el('div', {class: 'tiles'}, ['Needs info', 'Awaiting C9', 'Ready to Complete', 'Blocked'].map((s) => { const n = all.filter((r) => r.stage === s).length; return el('button', {type: 'button', class: 'tile' + (s === 'Ready to Complete' && n ? ' hot' : ''), onclick: () => { filter = s; renderCalls(); }}, el('b', {class: 'c-' + CLS[s], text: String(n)}), el('span', {text: s})); }));
+    const tiles = el('div', {class: 'tiles'}, ['Needs info', 'Awaiting C9', 'Ready to Complete', 'Blocked'].map((s) => { const n = all.filter((r) => r.stage === s).length; return el('button', {type: 'button', class: 'tile' + (s === 'Ready to Complete' && n ? ' hot' : ''), onclick: () => { filter = s; renderCalls(); }}, el('b', {class: 'c-' + CLS[s], text: String(n)}), el('span', {text: SL(s)})); }));
     const rb = respondBar(); if (rb) v.append(rb);
     v.append(el('div', {class: 'row'}, el('div', {style: 'flex:1;min-width:220px'}, search), el('button', {type: 'button', class: 'btn primary', text: '+ New call', onclick: () => openCall(null)})), tiles, streakChip(), chips, el('div', {id: 'bulkHost', style: 'margin-top:12px'}), el('div', {class: 'list', id: 'callList', style: 'margin-top:4px'}));
     const nts = store.get('notices', []);
@@ -1412,13 +1413,13 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
         el('label', {class: 'pick', onclick: (e) => e.stopPropagation()}, cb),
         el('div', {class: 'num'}, r.test ? 'TEST' : String(r.num || r.id), el('small', {text: r.test ? (r.cad === 'TESTREPORT' ? '#1' : '#' + r.cad.split('-')[1]) : fmtDate(r.date)})),
         el('div', {class: 'what'}, el('b', {text: r.type || 'Call'}), el('div', {class: 'meta'}, [r.area, r.zone && r.zone !== '—' ? r.zone : '', r.oic ? 'OIC ' + r.oic : '', nt ? ntLabel(nt) : ''].filter(Boolean).join(' · '), (() => { const k = r.test ? 0 : repeatsOf(r).length; return k >= 2 ? el('span', {class: 'reppill', text: ` · ↻ ${k + 1} calls here in 90 days`}) : null; })()), r.test || r.stage === "Other's report" ? null : stepsBar(r)),
-        el('div', {class: 'right'}, el('span', {class: 'pill c-' + cls, text: r.stage || '—'}), el('div', {class: 'needs'}, r.needs || '', old ? el('span', {class: 'age', text: ` ${ageDays(r)} days`}) : null))));
+        el('div', {class: 'right'}, el('span', {class: 'pill c-' + cls, text: SL(r.stage) || '—'}), el('div', {class: 'needs'}, r.needs || '', old ? el('span', {class: 'age', text: ` ${ageDays(r)} days`}) : null))));
     }
     renderBulk();
   }
   function renderBulk() {
     const h = $('#bulkHost'); if (!h) return; h.replaceChildren(); if (!picked.size) return;
-    const st = el('select', {'aria-label': 'Change stage to'}, el('option', {value: '', text: 'Change stage to…'}), STAGES.map((s) => el('option', {value: s, text: s})));
+    const st = el('select', {'aria-label': 'Change stage to'}, el('option', {value: '', text: 'Change stage to…'}), STAGES.map((s) => el('option', {value: s, text: SL(s)})));
     const as = el('select', {'aria-label': 'Assign to'}, el('option', {value: '', text: 'Assign to…'}), el('option', {value: '-', text: 'Unassigned'}), Object.values(S.crew).sort((a, b) => a.name.localeCompare(b.name)).map((c) => el('option', {value: c.name, text: c.name})));
     const nd = el('input', {type: 'text', placeholder: 'What it needs (optional)'});
     h.append(el('div', {class: 'bulk'}, el('b', {text: `${picked.size} selected`}), isOfficer() ? st : null, as, nd,
@@ -1557,7 +1558,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     // Status (locked)
     const stSec = el('div', {class: 'sec status b-' + (CLS[r.stage] || 'done')}); body.append(stSec);
     function drawStatus() {
-      const st = el('select', {id: 'f-stage', disabled: !statusOpen}, STAGES.map((s) => el('option', {value: s, text: s, selected: r.stage === s}))); f.stage = st;
+      const st = el('select', {id: 'f-stage', disabled: !statusOpen}, STAGES.map((s) => el('option', {value: s, text: SL(s), selected: r.stage === s}))); f.stage = st;
       st.addEventListener('change', () => { stSec.className = 'sec status b-' + (CLS[st.value] || 'done'); });
       stSec.replaceChildren(el('h3', {}, statusOpen ? 'Status (unlocked)' : 'Status (locked)', el('span', {class: 'grow'}), isOfficer() ? el('button', {type: 'button', class: 'link', text: statusOpen ? 'Lock again' : 'Unlock to change', onclick: () => { r.stage = f.stage.value; r.needs = f.needs.value; statusOpen = !statusOpen; drawStatus(); }}) : el('span', {class: 'note', text: 'Officers can unlock'})), ...(r.test || r.stage === "Other's report" ? [] : [stepsBar(r, true)]),
         el('div', {class: 'grid'}, el('label', {}, 'Stage', st), el('label', {class: 'span4', style: 'grid-column:span 3'}, 'What it needs', inp('needs', {disabled: !statusOpen}))), el('p', {class: 'note', text: "Set by Claude's reviews, approvals and Clear call. Unlock only to correct it yourself."}));
