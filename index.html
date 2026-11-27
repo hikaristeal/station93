@@ -271,6 +271,7 @@ body.bd-night .app{filter:brightness(.88)}
 .sig{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:8px}
 .sigdetail{white-space:pre-wrap;background:var(--sunk);border-radius:8px;padding:10px;margin:0;font-size:13px;max-height:240px;overflow:auto}
 .sec.hot{border-color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad)}
+.testpill{background:var(--warn);color:#111;font-weight:700}.chip.testchip{border-color:var(--warn);color:var(--warn)}
 .task{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:inset 5px 0 0 var(--bar,var(--line));text-align:left;width:100%;min-height:var(--tap)}
 .task .meta{color:var(--muted);font-size:13px}
 .task.b-needs{--bar:var(--warn)}.task.b-draft,.task.b-c9{--bar:var(--blue)}.task.b-ready{--bar:var(--ok)}.task.b-blocked{--bar:var(--bad)}.task.b-done{--bar:var(--gray)}
@@ -424,7 +425,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
 <script>
 (function () {
   'use strict';
-  const APPV = '2.10.1';
+  const APPV = '2.11.0';
   // ---------- tiny helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs || {})) { if (v == null || v === false) continue; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v); } kids.flat().forEach((c) => c != null && c !== false && e.append(c.nodeType ? c : document.createTextNode(c))); return e; };
@@ -1447,7 +1448,12 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     {label: 'Mileage check', agent: 'logistics', order: 'Check both mileage logs for gaps and typos'},
     {label: 'Shift briefing', agent: 'logistics', order: 'Give me a shift briefing: open calls, approvals, units in and out of service'},
     {label: 'Improve the app', agent: 'engineer', order: 'Look at how I use Station 93 and propose one improvement'},
+    {label: 'TEST: new test call', agent: 'dispatch', order: 'TEST: generate a new randomized test call with details and send it to the app', test: true},
+    {label: 'TEST: run the chain', agent: 'duty', order: 'TEST: work this test call through the whole chain - Dispatch check, Report Writer narrative from the test notes, QA - and report back. Dry run only.', needsTest: true},
   ];
+  // test orders: a dry run. The test call's (made-up) details ride along in the task so Claude can work it - real calls, FireWorks, Gmail, memory and mileage are never touched
+  const testSnap = (r) => r ? {id: r.id, cad: r.cad, date: r.date, type: r.type || '', area: r.area || '', zone: r.zone || '', district: r.district || '', units: r.units || '', crew: r.crew || '', unitcrew: r.unitcrew || [], oic: r.oic || '', notes: r.notes || '', narrative: r.narrative || '', resp: r.resp || {}, stage: r.stage || '', cleared_at: r.cleared_at || ''} : null;
+  let cmdTest = false;
   const myName = () => ME || (me() || {}).username || 'Alex Bishop';
   const taskList = () => Object.values(S.tasks || {});
   const tWaiting = () => taskList().filter((t) => t.status === 'awaiting_you');
@@ -1461,7 +1467,8 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     if (!r) return out;
     const text = `${r.notes || ''}\n${r.narrative || ''}`;
     for (const [re, what] of PHI) if (re.test(text)) out.push({lvl: 'bad', text: `Notes or narrative contain ${what} - patient details go only in FireWorks or the assessment sheet`});
-    if (!/^2026-\d{8}$/.test(r.cad || '')) out.push({lvl: 'warn', text: 'CAD # is not in the 2026-00000NNN form'});
+    if (r.test) out.push({lvl: 'warn', text: 'TEST call - dry run: nothing real (FireWorks, Gmail, mileage, memory) is touched'});
+    else if (!/^2026-\d{8}$/.test(r.cad || '')) out.push({lvl: 'warn', text: 'CAD # is not in the 2026-00000NNN form'});
     if (r.cad_provisional) out.push({lvl: 'warn', text: 'CAD # is still a guess - confirm it in Bryx'});
     if (!r.type) out.push({lvl: 'warn', text: 'No dispatch call type'});
     if (!r.zone || r.zone === '—') out.push({lvl: 'warn', text: 'No zone yet'});
@@ -1475,15 +1482,17 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     S.tasks[t.id] = t; outbox.push({at: nowISO(), kind, id: t.id, fields: fields || {}, from: 'tablet'}); if (outbox.length > 400) outbox = outbox.slice(-400);
     store.set('outbox', outbox); persist(); markDirty(); setNet(net === 'bad' || net === 'tap' ? net : 'warn'); schedulePush();
   }
-  function issueOrder(order, agent, reportId) {
+  function issueOrder(order, agent, reportId, testRun) {
     order = String(order || '').trim(); if (!order) { toast('Type the order first'); return; }
-    const r = reportId ? S.reports[reportId] : null; const pc = precheck(r, order);
+    const r = reportId ? S.reports[reportId] : null; const pc = precheck(r, order); const isT = !!(testRun || (r && r.test));
+    if (isT && !/^TEST\b/i.test(order)) order = 'TEST: ' + order;
     const go = () => {
       const at = nowISO(); const a = AG[agent] ? agent : 'duty';
       const t = {id: 'T' + Date.now().toString(36), at, _mod: at, by: myName(), device: cfg.device_name || DEV, order, agent: a, report_id: reportId || '', cad: r ? r.cad : '', status: 'queued', precheck: pc, chain: [{at, by: myName(), text: `Order to ${AG[a].name}: ${order}`}]};
-      saveTask(t, 'task.new', {order, agent: a, report_id: t.report_id, cad: t.cad, precheck: pc.map((x) => x.text)});
+      if (isT) { t.test = true; if (r && r.test) t.test_call = testSnap(r); }
+      saveTask(t, 'task.new', Object.assign({order, agent: a, report_id: t.report_id, cad: t.cad, precheck: pc.map((x) => x.text)}, isT ? {test: true, test_call: t.test_call || null} : {}));
       if (r) { r.history = (r.history || []).concat([{at, by: myName(), items: [`Order to ${AG[a].name}: ${order}`]}]).slice(-40); }
-      cmdDraft = ''; renderCommand(); toast(`Order logged for ${AG[a].name} - goes to Claude with the next sync`);
+      cmdDraft = ''; cmdTest = false; renderCommand(); toast(`${isT ? 'TEST order' : 'Order'} logged for ${AG[a].name} - goes to Claude with the next sync`);
     };
     const bad = pc.filter((x) => x.lvl === 'bad');
     if (bad.length) confirmBox('QA pre-check', bad.map((x) => x.text).join('\n') + '\n\nFix it first, or give the order anyway?', 'Give the order anyway', go); else go();
@@ -1548,7 +1557,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     const inbox = el('div', {class: 'sec' + (wait.length ? ' hot' : '')}, el('h3', {text: `Awaiting your signature (${wait.length})`}));
     if (!wait.length) inbox.append(el('p', {class: 'note', text: 'Nothing needs you right now.'}));
     for (const t of wait) { const g = (t.approval && t.approval.action) || 'other';
-      inbox.append(el('div', {class: 'sig'}, el('div', {}, el('span', {class: 'pill c-blocked', text: GATES[g] || GATES.other}), ' ', el('b', {text: (t.approval && t.approval.text) || t.order})),
+      inbox.append(el('div', {class: 'sig'}, el('div', {}, t.test ? el('span', {class: 'pill testpill', text: 'TEST - simulated'}) : null, t.test ? ' ' : null, el('span', {class: 'pill c-blocked', text: GATES[g] || GATES.other}), ' ', el('b', {text: (t.approval && t.approval.text) || t.order})),
         el('div', {class: 'note', text: `${AG[t.agent].name}${t.cad ? ' · ' + t.cad : ''} · via Duty Officer${t.result && t.result.summary ? ' · ' + t.result.summary : ''}`}),
         t.result && t.result.detail ? el('pre', {class: 'sigdetail', text: t.result.detail}) : null,
         el('div', {class: 'row'}, el('button', {type: 'button', class: 'btn go', text: 'Approve', onclick: () => decideTask(t, 'approved')}), el('button', {type: 'button', class: 'btn', text: 'Send back', onclick: () => decideTask(t, 'returned')}), el('button', {type: 'button', class: 'btn ghost', style: 'color:var(--bad)', text: 'Reject', onclick: () => decideTask(t, 'rejected')}),
@@ -1558,14 +1567,20 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     const openCalls = Object.values(S.reports).filter((r) => !r.test && OPEN.includes(r.stage)).sort((a, b) => (b.num || 0) - (a.num || 0));
     if (cmdCall && !S.reports[cmdCall]) cmdCall = '';
     const ta = el('textarea', {rows: 3, placeholder: 'e.g. Draft the 956 narrative from my notes, then QA it', 'aria-label': 'Order'}); ta.value = cmdDraft; ta.addEventListener('input', () => { cmdDraft = ta.value; });
-    const call = el('select', {'aria-label': 'Call this order is about'}, el('option', {value: '', text: 'No specific call'}), openCalls.map((r) => el('option', {value: r.id, text: `${r.num || r.id} · ${r.type || ''}${r.area ? ' · ' + r.area : ''}`}))); call.value = cmdCall;
+    const testCalls = Object.values(S.reports).filter((r) => r.test && r.stage !== 'Completed').sort((a, b) => String(b._mod || '').localeCompare(String(a._mod || '')));
+    const call = el('select', {'aria-label': 'Call this order is about'}, el('option', {value: '', text: 'No specific call'}), openCalls.map((r) => el('option', {value: r.id, text: `${r.num || r.id} · ${r.type || ''}${r.area ? ' · ' + r.area : ''}`})),
+      testCalls.length ? el('optgroup', {label: 'Test calls (dry run)'}, testCalls.map((r) => el('option', {value: r.id, text: `TEST ${r.cad} · ${r.type || ''}${r.area ? ' · ' + r.area : ''}`}))) : null); call.value = cmdCall;
+    const tbox = el('input', {type: 'checkbox', 'aria-label': 'Test run', style: 'width:22px;height:22px'}); tbox.checked = cmdTest || !!(S.reports[cmdCall] && S.reports[cmdCall].test);
+    const syncT = () => { const isTc = !!(call.value && S.reports[call.value] && S.reports[call.value].test); if (isTc) tbox.checked = true; tbox.disabled = isTc; cmdTest = tbox.checked; };
+    tbox.addEventListener('change', () => { cmdTest = tbox.checked; });
     const who = el('select', {'aria-label': 'Who gets the order'}, AGENTS.map((a) => el('option', {value: a.id, text: a.id === 'duty' ? 'Duty Officer (routes it)' : a.name}))); who.value = cmdAgent;
     const pcl = el('ul', {class: 'pcl'}); const drawPc = () => pcl.replaceChildren(...precheck(call.value && S.reports[call.value], '').map((x) => el('li', {class: x.lvl, text: x.text})));
-    call.addEventListener('change', () => { cmdCall = call.value; drawPc(); }); who.addEventListener('change', () => { cmdAgent = who.value; }); drawPc();
+    call.addEventListener('change', () => { cmdCall = call.value; syncT(); drawPc(); }); who.addEventListener('change', () => { cmdAgent = who.value; }); syncT(); drawPc();
     const order = el('div', {class: 'sec'}, el('h3', {text: 'Give an order'}),
-      el('div', {class: 'row'}, QUICK.map((qk) => el('button', {type: 'button', class: 'chip', text: qk.label, onclick: () => { if (qk.needsCall && !call.value) { toast('Pick the call first'); call.focus(); return; } ta.value = cmdDraft = qk.order; who.value = cmdAgent = qk.agent; ta.focus(); }}))),
+      el('div', {class: 'row'}, QUICK.map((qk) => el('button', {type: 'button', class: 'chip' + (qk.test || qk.needsTest ? ' testchip' : ''), text: qk.label, onclick: () => { if (qk.needsCall && !call.value) { toast('Pick the call first'); call.focus(); return; } if (qk.needsTest && !(call.value && S.reports[call.value] && S.reports[call.value].test)) { toast(testCalls.length ? 'Pick a test call first' : 'Make a test call first (Calls > + New call > Test call), or use TEST: new test call'); call.focus(); return; } ta.value = cmdDraft = qk.order; who.value = cmdAgent = qk.agent; if (qk.test || qk.needsTest) { tbox.checked = cmdTest = true; } ta.focus(); }}))),
       ta, el('div', {class: 'grid'}, el('label', {class: 'span2'}, 'Call', call), el('label', {class: 'span2'}, 'To', who)),
-      pcl, el('div', {class: 'row'}, el('span', {class: 'note grow', text: 'Orders go to Claude with the next sync. No patient names, ages or vitals in an order.'}), el('button', {type: 'button', class: 'btn primary', text: 'Issue order', onclick: () => issueOrder(ta.value, who.value, call.value)})));
+      el('label', {class: 'row', style: 'gap:10px;flex-direction:row;align-items:center;min-height:var(--tap)'}, tbox, el('span', {}, el('b', {text: 'Test run'}), ' - dry run. The agents work it end to end, but no FireWorks, Gmail, mileage, memory or real call is touched.')),
+      pcl, el('div', {class: 'row'}, el('span', {class: 'note grow', text: 'Orders go to Claude with the next sync. No patient names, ages or vitals in an order.'}), el('button', {type: 'button', class: 'btn primary', text: 'Issue order', onclick: () => issueOrder(ta.value, who.value, call.value, tbox.checked)})));
     // chain of command
     const chain = el('div', {class: 'sec'}, el('h3', {text: 'Chain of command'}), el('p', {class: 'note', text: 'Orders go down, reports come up.'}),
       el('div', {class: 'chain'}, el('div', {class: 'chainrow'}, agBox(you)), el('div', {class: 'chainline'}), el('div', {class: 'chainrow'}, agBox(AG.duty)), el('div', {class: 'chainline'}), el('div', {class: 'chainrow divs'}, AGENTS.filter((a) => a.to === 'duty').map(agBox))),
@@ -1579,7 +1594,7 @@ button.badge{border:0;width:100%;cursor:pointer;display:block}button.badge:hover
     if (!rows.length) list.append(el('div', {class: 'empty', text: all.length ? 'Nothing in this list.' : 'No orders yet. Give one above.'}));
     for (const t of rows) { const ch = t.chain || []; const last = ch[ch.length - 1] || {};
       list.append(el('button', {type: 'button', class: 'task b-' + (TCL[t.status] || 'done'), onclick: () => { cmdOpen = cmdOpen === t.id ? null : t.id; renderCommand(); }},
-        el('div', {}, el('b', {text: t.order}), el('div', {class: 'meta', text: `${fmtWhen(t.at)} · ${AG[t.agent] ? AG[t.agent].name : t.agent}${t.cad ? ' · ' + Number(t.cad.slice(-4)) : ''}${last.text ? ' · ' + last.by + ': ' + String(last.text).slice(0, 70) : ''}`})),
+        el('div', {}, t.test ? el('span', {class: 'pill testpill', text: 'TEST'}) : null, t.test ? ' ' : null, el('b', {text: t.order}), el('div', {class: 'meta', text: `${fmtWhen(t.at)} · ${AG[t.agent] ? AG[t.agent].name : t.agent}${t.cad ? ' · ' + Number(t.cad.slice(-4)) : ''}${last.text ? ' · ' + last.by + ': ' + String(last.text).slice(0, 70) : ''}`})),
         el('span', {class: 'pill c-' + (TCL[t.status] || 'done'), text: TST[t.status] || t.status})));
       if (cmdOpen === t.id) list.append(el('div', {class: 'tdetail'},
         t.result && t.result.summary ? el('p', {style: 'margin:0'}, el('b', {text: 'Result: '}), String(t.result.summary)) : null,
